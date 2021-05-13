@@ -1,0 +1,8 @@
+* Beehive Monitor
+
+** Write uPy Firmware
+
+ #+BEGIN_SRC
+ esptool.py --chip esp32 --port /dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0 --baud 460800 write_flash -z 0x1000 firmware/esp32-20210418-v1.15.bin
+ esptool.py --chip esp32 --port /dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0 erase_flash
+ #+END_SRC
