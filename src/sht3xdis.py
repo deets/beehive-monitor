@@ -32,7 +32,6 @@ class SHT3XDIS:
         machine.sleep(self.MEASUREMENT_TIME)
         v = self._i2c.readfrom(self._address, 6)
         humidity, _, temp, _ = ustruct.unpack(">HBHB", v)
-        print(v, humidity, temp)
         return (
             float(humidity) / 65535.0 * 100,
             -45.0 + 175.0 * float(temp) / 65535.0
@@ -40,8 +39,8 @@ class SHT3XDIS:
 
 
 def test():
-    scl = machine.Pin(12, machine.Pin.IN, machine.Pin.PULL_UP)
-    sda = machine.Pin(14, machine.Pin.IN, machine.Pin.PULL_UP)
+    scl = machine.Pin(27, machine.Pin.IN, machine.Pin.PULL_UP)
+    sda = machine.Pin(26, machine.Pin.IN, machine.Pin.PULL_UP)
     i2c = machine.SoftI2C(scl=scl, sda=sda, freq=400000)
 
     sensor = SHT3XDIS(i2c)
