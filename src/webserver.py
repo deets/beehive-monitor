@@ -14,18 +14,25 @@ border-radius: 4px; color: white; padding: 16px 40px; text-decoration: none; fon
     return html
 
 
-def run():
+def serve_request(poller, conn):
+    request = conn.recv(1024)
+    request = str(request)
+    response = serve()
+    conn.sendall('HTTP/1.1 200 OK\n')
+    conn.sendall('Content-Type: text/html\n')
+    conn.sendall('Connection: close\n\n')
+    conn.sendall(response)
+    poller.unregister(conn)
+    conn.close()
+
+
+def incoming_connection(poller, s):
+    conn, _addr = s.accept()
+    poller.register(conn, serve_request)
+
+
+def register(poller):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(('', 80))
     s.listen(5)
-
-    while True:
-        conn, addr = s.accept()
-        request = conn.recv(1024)
-        request = str(request)
-        response = serve()
-        conn.send('HTTP/1.1 200 OK\n')
-        conn.send('Content-Type: text/html\n')
-        conn.send('Connection: close\n\n')
-        conn.sendall(response)
-        conn.close()
+    poller.register(s, incoming_connection)
