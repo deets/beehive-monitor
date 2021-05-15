@@ -1,0 +1,3 @@
+[submodule "modules/utemplate"]
+	path = modules/utemplate
+	url = https://github.com/pfalcon/utemplate.git

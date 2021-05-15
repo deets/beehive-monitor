@@ -29,9 +29,11 @@ class Poller:
             self._events[fd.fileno()](self, fd)
 
 
-wifi.run_ap()
+nm = wifi.NetworkManager()
+nm.run_ap()
+
 poller = Poller()
-webserver.register(poller)
+webserver.WebServer(poller, nm)
 
 while True:
     print("entering event loop")
