@@ -1,4 +1,4 @@
-{% args networks %}
+{% args networks, message %}
 <html>
   <head>
     <title>Beehive</title>
@@ -12,10 +12,25 @@
   </head>
   <body>
     <h1>Beehive</h1>
-    <ul>
+    {% if message is not None %}
+    <div class="messagebox">{{ message }}</div>
+    {% endif %}
+    <ul class="networklist">
       {% for name in networks %}
-      <li>{{ name }}</li>
+      <li>{{ name }}
+	<form action="remove-network">
+	  <input type="hidden" name="network" value="{{ name }}"/>
+	  <button>Remove network</button>
+	</form>
+      </li>
       {% endfor %}
     </ul>
+    <form action="add-network">
+      <ul class="newnetwork">
+	<li>SSID: <input name="ssid"/></li>
+	<li>Password: <input name="password"/></li>
+	<li><button>Add network</button></li>
+      </ul>
+    </form>
   </body>
 </html>

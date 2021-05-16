@@ -29,6 +29,14 @@ class NetworkManager:
                 "networks": {}
             }
 
+    def _save(self):
+        pass
+
     @property
     def networks(self):
         return self._networks["networks"]
+
+    def remove_network(self, network):
+        if network in self._networks["networks"]:
+            del self._networks["networks"][network]
+            self._save()
