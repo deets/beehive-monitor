@@ -61,15 +61,16 @@ class WebServer:
     def _process_request(self, request):
         try:
             path = request.split("\r\n")[0].split()[1]
-            print(path)
             _protocol, _host, path, query = urlparse(path)
             query = qparse(query)
+            print(path, query)
             return self._dispatch(path, query)
         except IndexError:
             pass
 
     def _dispatch(self, path, query):
         handler = self.HANDLERS.get(path, lambda self, query: None)
+        # return handler(self, query)
         try:
             return handler(self, query)
         except Exception as e:
@@ -81,6 +82,13 @@ class WebServer:
             self._nm.remove_network(network)
             return "Removed <b>{}</b>".format(network)
 
+    def _add_network(self, query):
+        ssid = query["ssid"]
+        password = query.get("password")
+        self._nm.add_network(ssid, password)
+        return "Added network '{}'".format(ssid)
+
     HANDLERS = {
-        "/remove-network": _remove_network
+        "/remove-network": _remove_network,
+        "/add-network": _add_network,
     }

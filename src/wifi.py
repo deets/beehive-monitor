@@ -23,20 +23,25 @@ class NetworkManager:
         try:
             with open("networks.json") as inf:
                 return json.load(inf)
-        except OSError:
+        except (OSError, ValueError):
             return {
                 "last": None,
                 "networks": {}
             }
 
     def _save(self):
-        pass
+        with open("networks.json", "wb") as outf:
+            json.dump(self._networks, outf)
 
     @property
     def networks(self):
         return self._networks["networks"]
 
-    def remove_network(self, network):
-        if network in self._networks["networks"]:
-            del self._networks["networks"][network]
+    def remove_network(self, ssid):
+        if ssid in self._networks["networks"]:
+            del self._networks["networks"][ssid]
             self._save()
+
+    def add_network(self, ssid, password=None):
+        self._networks["networks"][ssid] = password
+        self._save()
