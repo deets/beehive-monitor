@@ -9,6 +9,12 @@ src="src/*.py src/*.json"
 
 for f in $src
 do
-    echo "$f"
-    pipenv run ampy --port $PORT put $f
+    hash=$(cat $f | sha1sum | awk '{ print $ 1}')
+    hashfile="$(dirname $f)/.$(basename $f).hash"
+    if [ ! -e "$hashfile" ] || [ "$(<$hashfile)" != $hash ]
+    then
+	echo "$f"
+	pipenv run ampy --port $PORT put $f
+	echo $hash > $hashfile
+    fi
 done
