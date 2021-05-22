@@ -3,6 +3,7 @@ import uselect
 
 import wifi
 import webserver
+import buttons
 
 
 class Poller:
@@ -29,12 +30,16 @@ class Poller:
             self._events[fd.fileno()](self, fd)
 
 
+buttons.setup()
 nm = wifi.NetworkManager()
-nm.run_ap()
-
 poller = Poller()
 webserver.WebServer(poller, nm)
 
+print("entering event loop")
+
 while True:
-    print("entering event loop")
-    poller.poll()
+    if buttons.wifi_mode() == "ap":
+        nm.run_ap()
+    else:
+        nm.run_sta()
+    poller.poll(timeout=500)
