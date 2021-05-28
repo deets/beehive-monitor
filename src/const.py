@@ -8,3 +8,6 @@ MAX_CLIENTS = 10
 
 # IO
 WIFI_MODE_PIN = 15  # HIGH means STA, LOW AP mode
+
+SCL = 27
+SDA = 26
