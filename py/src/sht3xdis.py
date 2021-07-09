@@ -6,7 +6,7 @@ class SHT3XDIS:
 
     STATUS = bytearray([0xF3, 0x2D])
     MEASUREMENT = bytearray([0x24, 0x00])
-    MEASUREMENT_TIME = 20 # according to datasheet, 15. I add a bit extra.
+    MEASUREMENT_TIME = 20  # ms, according to datasheet, 15. I add a bit extra.
     RESET = bytearray([0x30, 0xA2])
     CLEAR = bytearray([0x30, 0x41])
 
@@ -24,14 +24,19 @@ class SHT3XDIS:
     def status(self):
         self._i2c.writeto(self._address, self.STATUS)
         v = self._i2c.readfrom(self._address, 3)
-        return v
+        return ustruct.unpack(">HB", v)[0]
 
     @property
-    def values(self):
+    def raw_values(self):
         self._i2c.writeto(self._address, self.MEASUREMENT)
         machine.sleep(self.MEASUREMENT_TIME)
         v = self._i2c.readfrom(self._address, 6)
         humidity, _, temp, _ = ustruct.unpack(">HBHB", v)
+        return humidity, temp
+
+    @property
+    def values(self):
+        humidity, temp = self.raw_values
         return (
             float(humidity) / 65535.0 * 100,
             -45.0 + 175.0 * float(temp) / 65535.0

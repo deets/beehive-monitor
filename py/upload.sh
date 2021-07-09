@@ -5,7 +5,7 @@ PORT=/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_000
 utemplate=$(realpath modules/utemplate/utemplate_util.py)
 (cd src; rm -f *_tpl.py; export PYTHONPATH=`pwd`; for t in "*.tpl"; do echo compiling $t; python3 $utemplate compile $t; done)
 
-src="src/*.py src/*.json"
+src="src/*.py src/*/*.py src/*.json"
 
 for f in $src
 do
@@ -14,7 +14,7 @@ do
     if [ ! -e "$hashfile" ] || [ "$(<$hashfile)" != $hash ]
     then
 	echo "$f"
-	pipenv run ampy --port $PORT put $f
+	pipenv run ampy --port $PORT put "$f" $(realpath --relative-to src "$f")
 	echo $hash > $hashfile
     fi
 done

@@ -1,10 +1,11 @@
 # Copyright: 2021, Diez B. Roggisch, Berlin . All rights reserved.
 import uselect
-
+import gc
 import wifi
 import webserver
 import buttons
-
+import sensors
+import machine
 
 class Poller:
 
@@ -32,10 +33,33 @@ class Poller:
 
 buttons.setup()
 nm = wifi.NetworkManager()
+nm.run_sta()
 poller = Poller()
 webserver.WebServer(poller, nm)
 
 print("entering event loop")
+
+sensors.setup()
+
+import micropython
+import umqtt.robust2 as mqtt
+client = mqtt.MQTTClient("beehive", "192.168.1.108")
+client.connect()
+print("client connected")
+
+while True:
+    for i in range(10):
+        print("start", i)
+        client.publish(b"foobar", b"start")
+        machine.sleep(100)
+
+    # for sensor in sensors.SENSORS.values():
+    #     humidity, temp = sensor.raw_values
+    #     print(humidity, temp)
+    #     client.publish(b"foobar", str(humidity), qos=1)
+    machine.sleep(100)
+    gc.collect()
+    #micropython.mem_info(1)
 
 while True:
     if buttons.wifi_mode() == "ap":

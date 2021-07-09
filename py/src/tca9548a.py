@@ -17,6 +17,10 @@ class Bus:
         self._mux.select_channel(self._channel)
         return self._mux._i2c.readfrom(address, count)
 
+    def scan(self):
+        self._mux.select_channel(self._channel)
+        return self._mux._i2c.scan()
+
 
 class TCA9548A:
 
@@ -65,7 +69,16 @@ def test():
     i2c = machine.SoftI2C(scl=scl, sda=sda, freq=400000)
     mux = TCA9548A(i2c, reset=13)
     sensor = sht3xdis.SHT3XDIS(mux.bus(7))
-    sensor.reset()
-    sensor.clear()
-    print(sensor.status)
-    print(sensor.values)
+
+    reset = True
+    while True:
+        try:
+            if reset:
+                sensor.reset()
+                sensor.clear()
+                reset = False
+            print(sensor.values)
+            print(sensor.status)
+            machine.sleep(100)
+        except OSError:
+            reset = True
