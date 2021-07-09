@@ -1,3 +1,6 @@
 [submodule "modules/utemplate"]
 	path = py/modules/utemplate
 	url = https://github.com/pfalcon/utemplate.git
+[submodule "idf/components/esp32deets"]
+	path = idf/components/esp32deets
+	url = git@github.com:deets/esp32deets.git

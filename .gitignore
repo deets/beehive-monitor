@@ -1,2 +1,5 @@
 *_tpl.py
 .*.hash
+/idf/.cache/
+/idf/build/
+
