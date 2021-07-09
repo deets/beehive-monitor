@@ -1,5 +1,7 @@
 #include "wifi.hh"
 #include "mqtt.hpp"
+#include "sensors.hpp"
+
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -12,9 +14,6 @@ extern "C" void app_main();
 
 namespace {
 
-// const auto SDA = gpio_num_t(19);
-// const auto SCL = gpio_num_t(20);
-
 
 void main_task(void*)
 {
@@ -22,12 +21,21 @@ void main_task(void*)
   auto mqtt_client = std::unique_ptr<MQTTClient>(new MQTTClient("192.168.1.108"));
   while(true)
   {
-    ESP_LOGI("main", "here I am");
     vTaskDelay(200 / portTICK_PERIOD_MS);
     mqtt_client->publish("foobar", "baz");
   }
 }
 
+void sensor_task(void*)
+{
+  Sensors sensors;
+  while(true)
+  {
+    ESP_LOGI("main", "here I am");
+    sensors.work();
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+  }
+}
 } // end ns anon
 
 void app_main()
@@ -42,4 +50,5 @@ void app_main()
   // it seems if I don't bind this to core 0, the i2c
   // subsystem fails randomly.
   xTaskCreatePinnedToCore(main_task, "main", 8192, NULL, uxTaskPriorityGet(NULL), NULL, 0);
+  xTaskCreatePinnedToCore(sensor_task, "sensor", 8192, NULL, uxTaskPriorityGet(NULL), NULL, 0);
 }
