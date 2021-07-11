@@ -19,9 +19,6 @@ namespace {
 void sensor_task(void*)
 {
   Sensors sensors;
-  sensors.sensor_values.connect([](sht3xdis_value_t v) {
-    ESP_LOGI(TAG, "%i:%i -> %i, %i", v.busno, v.address, v.values.humidity, v.values.temperature);
-  });
   while(true)
   {
     vTaskDelay(2000 / portTICK_PERIOD_MS);

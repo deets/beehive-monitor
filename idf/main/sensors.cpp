@@ -1,9 +1,12 @@
 // Copyright: 2021, Diez B. Roggisch, Berlin, all rights reserved
 
 #include "sensors.hpp"
-#include "i2c.hh"
+#include "beehive_events.hpp"
 
-#include <tca9548a.hpp>
+#include "i2c.hh"
+#include "tca9548a.hpp"
+#include "sht3xdis.hpp"
+
 #include <esp_log.h>
 
 #define TAG "sensors"
@@ -39,9 +42,15 @@ Sensors::~Sensors() {}
 
 void Sensors::work()
 {
+  using namespace beehive::events::sensors;
+
+  std::vector<sht3xdis_value_t> readings;
+
   for(auto& entry : _sensors)
   {
     const auto values = entry.sensor->raw_values();
-    sensor_values({ entry.busno, entry.address, values });
+    readings.push_back({ entry.busno, entry.address, values.humidity, values.temperature });
   }
+
+  send_readings(readings);
 }

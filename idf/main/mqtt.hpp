@@ -18,7 +18,10 @@ private:
   void handle_mqtt_event(esp_event_base_t event_base, int32_t event_id, void *event_data);
 
   static void s_config_event_handler(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);
-  void config_event_handler(esp_event_base_t base, config_events_t id, void* event_data);
+  void config_event_handler(esp_event_base_t base, beehive::events::config::config_events_t id, void* event_data);
+
+  static void s_sensor_event_handler(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);
+  void sensor_event_handler(esp_event_base_t base, beehive::events::sensors::sensor_events_t id, void* event_data);
 
   esp_mqtt_client_config_t _config;
   esp_mqtt_client_handle_t _client;

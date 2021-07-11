@@ -1,12 +1,51 @@
 // Copyright: 2021, Diez B. Roggisch, Berlin, all rights reserved
 
 #include "mqtt.hpp"
+#include "beehive_events.hpp"
 #include "mqtt_client.h"
 
 #include <esp_log.h>
 #include <cstring>
 
 #define TAG "mqtt"
+
+namespace {
+
+struct sht3xdis_message_t
+{
+  sht3xdis_message_t(const beehive::events::sensors::sht3xdis_value_t& v)
+  {
+    _payload.humidity = v.humidity;
+    _payload.temperature = v.temperature;
+  }
+
+  struct  __attribute__ ((packed))  payload_t
+  {
+    uint16_t humidity;
+    uint16_t temperature;
+  };
+
+  static const char* topic()
+  {
+    return "roland::sensor";
+  }
+
+  const char* payload() const
+  {
+    return (const char*)&_payload;
+  }
+
+  int payload_size() const
+  {
+    return sizeof(payload_t);
+  }
+
+  payload_t _payload;
+};
+
+
+} // namespace
+
 
 
 MQTTClient::MQTTClient()
@@ -23,7 +62,8 @@ MQTTClient::MQTTClient()
     MQTTClient::s_handle_mqtt_event, this);
   esp_mqtt_client_start(_client);
 
-  ESP_ERROR_CHECK(esp_event_handler_instance_register(CONFIG_EVENTS, CONFIG_EVENT_MQTT_HOST, MQTTClient::s_config_event_handler, this, NULL));
+  ESP_ERROR_CHECK(esp_event_handler_instance_register(CONFIG_EVENTS, beehive::events::config::CONFIG_EVENT_MQTT_HOST, MQTTClient::s_config_event_handler, this, NULL));
+  ESP_ERROR_CHECK(esp_event_handler_instance_register(SENSOR_EVENTS, beehive::events::sensors::SENSOR_EVENT_SHT3XDIS_READINGS, MQTTClient::s_sensor_event_handler, this, NULL));
 }
 
 int MQTTClient::publish(const char *topic, const char *data, int len, int qos,
@@ -76,15 +116,15 @@ void MQTTClient::s_config_event_handler(void *handler_args,
                                         esp_event_base_t event_base, int32_t event_id,
                                         void *event_data)
 {
-  static_cast<MQTTClient*>(handler_args)->config_event_handler(event_base, config_events_t(event_id), event_data);
+  static_cast<MQTTClient*>(handler_args)->config_event_handler(event_base, beehive::events::config::config_events_t(event_id), event_data);
 }
 
 
-void MQTTClient::config_event_handler(esp_event_base_t base, config_events_t id, void* event_data)
+void MQTTClient::config_event_handler(esp_event_base_t base, beehive::events::config::config_events_t id, void* event_data)
 {
   switch(id)
   {
-  case CONFIG_EVENT_MQTT_HOST:
+  case beehive::events::config::CONFIG_EVENT_MQTT_HOST:
     {
       const auto hostname = beehive::events::config::mqtt::hostname(id, event_data);
       if(hostname)
@@ -95,5 +135,25 @@ void MQTTClient::config_event_handler(esp_event_base_t base, config_events_t id,
       }
     }
     break;
+  }
+}
+
+void MQTTClient::s_sensor_event_handler(void *handler_args,
+                                        esp_event_base_t base, int32_t id,
+                                        void *event_data) {
+
+  static_cast<MQTTClient*>(handler_args)->sensor_event_handler(base, beehive::events::sensors::sensor_events_t(id), event_data);
+}
+
+void MQTTClient::sensor_event_handler(esp_event_base_t base, beehive::events::sensors::sensor_events_t id, void* event_data)
+{
+  const auto readings = beehive::events::sensors::receive_readings(id, event_data);
+  if(readings)
+  {
+    for(const auto& reading : *readings)
+    {
+      const auto message = sht3xdis_message_t(reading);
+      publish(message.topic(), message.payload(), message.payload_size());
+    }
   }
 }

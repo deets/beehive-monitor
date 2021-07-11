@@ -1,20 +1,16 @@
 // Copyright: 2021, Diez B. Roggisch, Berlin, all rights reserved
 
 #pragma once
-#include "nod.hpp"
-#include "sht3xdis.hpp"
+
 #include <memory>
 #include <vector>
 
+namespace sht3xdis {
+class SHT3XDIS;
+};
+
 class I2C;
 class TCA9548A;
-
-struct sht3xdis_value_t
-{
-  uint8_t busno;
-  uint8_t address;
-  sht3xdis::RawValues values;
-};
 
 class Sensors
 {
@@ -30,8 +26,6 @@ public:
   ~Sensors();
 
   void work();
-
-  nod::signal<void(sht3xdis_value_t)> sensor_values;
 
 private:
   std::unique_ptr<I2C> _bus;
