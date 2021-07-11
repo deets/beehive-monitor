@@ -8,28 +8,22 @@
 
 #define TAG "mqtt"
 
-namespace {
-esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
+
+MQTTClient::MQTTClient()
 {
-  return static_cast<MQTTClient*>(event->user_context)->handle_event(event);
-}
-
-void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) {
-    ESP_LOGI(TAG, "Event dispatched from event loop base=%s, event_id=%d", base, event_id);
-    mqtt_event_handler_cb(esp_mqtt_event_handle_t(event_data));
-}
-
-}
-
-MQTTClient::MQTTClient(const char *host)
-{
-  esp_mqtt_client_config_t config;
-  std::memset(&config, 0, sizeof(esp_mqtt_client_config_t));
-  config.host = host;
-  config.user_context = this;
-  _client = esp_mqtt_client_init(&config);
-  esp_mqtt_client_register_event(_client, esp_mqtt_event_id_t(ESP_EVENT_ANY_ID), mqtt_event_handler, _client);
+  std::memset(&_config, 0, sizeof(esp_mqtt_client_config_t));
+  _config.user_context = this;
+  // we *must* give a host, otherwise the
+  // next call bails out.
+  _config.host = "127.0.0.1";
+  _client = esp_mqtt_client_init(&_config);
+  esp_mqtt_client_register_event(
+    _client,
+    esp_mqtt_event_id_t(ESP_EVENT_ANY_ID),
+    MQTTClient::s_handle_mqtt_event, this);
   esp_mqtt_client_start(_client);
+
+  ESP_ERROR_CHECK(esp_event_handler_instance_register(CONFIG_EVENTS, CONFIG_EVENT_MQTT_HOST, MQTTClient::s_config_event_handler, this, NULL));
 }
 
 int MQTTClient::publish(const char *topic, const char *data, int len, int qos,
@@ -37,11 +31,17 @@ int MQTTClient::publish(const char *topic, const char *data, int len, int qos,
   return esp_mqtt_client_publish(_client, topic, data, len, qos, retain);
 }
 
-
-esp_err_t MQTTClient::handle_event(esp_mqtt_event_handle_t event)
+void MQTTClient::s_handle_mqtt_event(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
+  static_cast<MQTTClient*>(event_handler_arg)->handle_mqtt_event(event_base, event_id, event_data);
+}
+
+
+void MQTTClient::handle_mqtt_event(esp_event_base_t event_base, int32_t event_id, void *event_data)
+{
+  const auto event = esp_mqtt_event_handle_t(event_data);
   // your_context_t *context = event->context;
-  switch (event->event_id) {
+  switch (event_id) {
   case MQTT_EVENT_CONNECTED:
     ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
     break;
@@ -66,8 +66,31 @@ esp_err_t MQTTClient::handle_event(esp_mqtt_event_handle_t event)
     ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
     break;
   default:
-    ESP_LOGI(TAG, "Other event id:%d", event->event_id);
+    ESP_LOGI(TAG, "Other event id:%d", event_id);
     break;
   }
-  return ESP_OK;
+}
+
+
+void MQTTClient::s_config_event_handler(void *handler_args,
+                                        esp_event_base_t event_base, int32_t event_id,
+                                        void *event_data)
+{
+  static_cast<MQTTClient*>(handler_args)->config_event_handler(event_base, config_events_t(event_id), event_data);
+}
+
+
+void MQTTClient::config_event_handler(esp_event_base_t base, config_events_t id, void* event_data)
+{
+  switch(id)
+  {
+  case CONFIG_EVENT_MQTT_HOST:
+    {
+      const auto config = static_cast<const config_event_mqtt_host_t*>(event_data);
+      ESP_LOGE(TAG, "CONFIG_EVENT_MQTT_HOST: %s", config->host);
+      _config.host = config->host;
+      esp_mqtt_set_config(_client, &_config);
+    }
+    break;
+  }
 }

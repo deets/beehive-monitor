@@ -1,7 +1,7 @@
 #include "wifi.hh"
 #include "mqtt.hpp"
 #include "sensors.hpp"
-
+#include "beehive_events.hpp"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -16,18 +16,6 @@ extern "C" void app_main();
 
 namespace {
 
-
-void main_task(void*)
-{
-  setup_wifi();
-  auto mqtt_client = std::unique_ptr<MQTTClient>(new MQTTClient("192.168.1.108"));
-  while(true)
-  {
-    vTaskDelay(200 / portTICK_PERIOD_MS);
-    mqtt_client->publish("foobar", "baz");
-  }
-}
-
 void sensor_task(void*)
 {
   Sensors sensors;
@@ -36,15 +24,16 @@ void sensor_task(void*)
   });
   while(true)
   {
-    ESP_LOGI("main", "here I am");
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
     sensors.work();
-    vTaskDelay(200 / portTICK_PERIOD_MS);
   }
 }
 } // end ns anon
 
 void app_main()
 {
+  ESP_ERROR_CHECK(esp_event_loop_create_default());
+
   //Initialize NVS
   esp_err_t ret = nvs_flash_init();
   if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -52,8 +41,22 @@ void app_main()
     ret = nvs_flash_init();
   }
   ESP_ERROR_CHECK(ret);
+  setup_wifi();
+
+  MQTTClient mqtt_client;
+
   // it seems if I don't bind this to core 0, the i2c
   // subsystem fails randomly.
-  xTaskCreatePinnedToCore(main_task, "main", 8192, NULL, uxTaskPriorityGet(NULL), NULL, 0);
   xTaskCreatePinnedToCore(sensor_task, "sensor", 8192, NULL, uxTaskPriorityGet(NULL), NULL, 0);
+
+  config_event_mqtt_host_t mqtt_host_config {"192.168.1.108" };
+
+  post_config_event(mqtt_host_config);
+  // keep this task alive so we retain
+  // the stack-frame.
+  while(true)
+  {
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    mqtt_client.publish("foobar", "baz");
+  }
 }
