@@ -1,6 +1,9 @@
 // Copyright: 2021, Diez B. Roggisch, Berlin, all rights reserved
 #pragma once
 #include "esp_event.h"
+#include "esp_event_base.h"
+
+#include <optional>
 
 #ifdef __cplusplus
 extern "C" {
@@ -12,14 +15,14 @@ extern "C" {
 }
 #endif
 
-struct config_event_mqtt_host_t
-{
-  char host[200];
-};
-
 typedef enum {
   CONFIG_EVENT_MQTT_HOST
 } config_events_t;
 
 
-void post_config_event(const config_event_mqtt_host_t&);
+namespace beehive::events::config::mqtt {
+
+void hostname(const char *hostname);
+std::optional<std::string> hostname(config_events_t, void* event_data);
+
+}

@@ -86,10 +86,13 @@ void MQTTClient::config_event_handler(esp_event_base_t base, config_events_t id,
   {
   case CONFIG_EVENT_MQTT_HOST:
     {
-      const auto config = static_cast<const config_event_mqtt_host_t*>(event_data);
-      ESP_LOGE(TAG, "CONFIG_EVENT_MQTT_HOST: %s", config->host);
-      _config.host = config->host;
-      esp_mqtt_set_config(_client, &_config);
+      const auto hostname = beehive::events::config::mqtt::hostname(id, event_data);
+      if(hostname)
+      {
+	ESP_LOGE(TAG, "CONFIG_EVENT_MQTT_HOST: %s", hostname->c_str());
+	_config.host = hostname->c_str();
+	esp_mqtt_set_config(_client, &_config);
+      }
     }
     break;
   }
