@@ -2,6 +2,7 @@
 
 #include "mqtt.hpp"
 #include "beehive_events.hpp"
+#include "roland.hpp"
 #include "mqtt_client.h"
 
 #include <esp_log.h>
@@ -9,44 +10,7 @@
 
 #define TAG "mqtt"
 
-namespace {
-
-struct sht3xdis_message_t
-{
-  sht3xdis_message_t(const beehive::events::sensors::sht3xdis_value_t& v)
-  {
-    _payload.humidity = v.humidity;
-    _payload.temperature = v.temperature;
-  }
-
-  struct  __attribute__ ((packed))  payload_t
-  {
-    uint16_t humidity;
-    uint16_t temperature;
-  };
-
-  static const char* topic()
-  {
-    return "roland::sensor";
-  }
-
-  const char* payload() const
-  {
-    return (const char*)&_payload;
-  }
-
-  int payload_size() const
-  {
-    return sizeof(payload_t);
-  }
-
-  payload_t _payload;
-};
-
-
-} // namespace
-
-
+namespace beehive::mqtt {
 
 MQTTClient::MQTTClient()
 {
@@ -147,13 +111,13 @@ void MQTTClient::s_sensor_event_handler(void *handler_args,
 
 void MQTTClient::sensor_event_handler(esp_event_base_t base, beehive::events::sensors::sensor_events_t id, void* event_data)
 {
+  using namespace beehive::mqtt;
+
   const auto readings = beehive::events::sensors::receive_readings(id, event_data);
   if(readings)
   {
-    for(const auto& reading : *readings)
-    {
-      const auto message = sht3xdis_message_t(reading);
-      publish(message.topic(), message.payload(), message.payload_size());
-    }
+    roland::publish(*readings, [this](const char *topic, const char *data, int len, int qos, int retain) { publish(topic, data, len, qos, retain);});
   }
 }
+
+} // namespace beehive::mqtt

@@ -5,6 +5,8 @@ set(srcs
   mqtt.cpp
   sensors.hpp
   sensors.cpp
+  roland.hpp
+  roland.cpp
   beehive_events.hpp
   beehive_events.cpp
   )

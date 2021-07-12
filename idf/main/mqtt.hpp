@@ -6,6 +6,8 @@
 
 #include <mqtt_client.h>
 
+namespace beehive::mqtt {
+
 class MQTTClient
 {
 public:
@@ -26,3 +28,5 @@ private:
   esp_mqtt_client_config_t _config;
   esp_mqtt_client_handle_t _client;
 };
+
+} // namespace beehive::mqtt

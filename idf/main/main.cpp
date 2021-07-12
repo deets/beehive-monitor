@@ -14,6 +14,8 @@ extern "C" void app_main();
 
 #define TAG "main"
 
+using namespace beehive;
+
 namespace {
 
 void sensor_task(void*)
@@ -40,7 +42,7 @@ void app_main()
   ESP_ERROR_CHECK(ret);
   setup_wifi();
 
-  MQTTClient mqtt_client;
+  mqtt::MQTTClient mqtt_client;
 
   // it seems if I don't bind this to core 0, the i2c
   // subsystem fails randomly.
