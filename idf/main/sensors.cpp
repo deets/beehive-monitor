@@ -2,6 +2,7 @@
 
 #include "sensors.hpp"
 #include "beehive_events.hpp"
+#include "pins.hpp"
 
 #include "i2c.hh"
 #include "tca9548a.hpp"
@@ -11,12 +12,6 @@
 
 #define TAG "sensors"
 
-namespace {
-
-const auto SDA = gpio_num_t(26);
-const auto SCL = gpio_num_t(27);
-
-} // namespace
 
 
 Sensors::Sensors()
