@@ -47,30 +47,30 @@ void MQTTClient::handle_mqtt_event(esp_event_base_t event_base, int32_t event_id
   // your_context_t *context = event->context;
   switch (event_id) {
   case MQTT_EVENT_CONNECTED:
-    ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
+    ESP_LOGD(TAG, "MQTT_EVENT_CONNECTED");
     break;
   case MQTT_EVENT_DISCONNECTED:
-    ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
+    ESP_LOGD(TAG, "MQTT_EVENT_DISCONNECTED");
     break;
   case MQTT_EVENT_SUBSCRIBED:
-    ESP_LOGI(TAG, "MQTT_EVENT_SUBSCRIBED");
+    ESP_LOGD(TAG, "MQTT_EVENT_SUBSCRIBED");
     break;
   case MQTT_EVENT_UNSUBSCRIBED:
-    ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
+    ESP_LOGD(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
     break;
   case MQTT_EVENT_PUBLISHED:
-    ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
+    ESP_LOGD(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
     break;
   case MQTT_EVENT_DATA:
-    ESP_LOGI(TAG, "MQTT_EVENT_DATA");
+    ESP_LOGD(TAG, "MQTT_EVENT_DATA");
     printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
     printf("DATA=%.*s\r\n", event->data_len, event->data);
     break;
   case MQTT_EVENT_ERROR:
-    ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
+    ESP_LOGD(TAG, "MQTT_EVENT_ERROR");
     break;
   default:
-    ESP_LOGI(TAG, "Other event id:%d", event_id);
+    ESP_LOGD(TAG, "Other event id:%d", event_id);
     break;
   }
 }
@@ -111,8 +111,6 @@ void MQTTClient::s_sensor_event_handler(void *handler_args,
 
 void MQTTClient::sensor_event_handler(esp_event_base_t base, beehive::events::sensors::sensor_events_t id, void* event_data)
 {
-  using namespace beehive::mqtt;
-
   const auto readings = beehive::events::sensors::receive_readings(id, event_data);
   if(readings)
   {

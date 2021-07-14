@@ -22,7 +22,7 @@ Sensors::Sensors()
   {
     for(auto& address : _mux->bus(busno).scan())
     {
-      ESP_LOGE(TAG, "on bus %i found address: %x", busno, address);
+      ESP_LOGI(TAG, "on bus %i found address: %x", busno, address);
       if(sht3xdis::SHT3XDIS::valid_address(address))
       {
 	auto sensor = std::unique_ptr<sht3xdis::SHT3XDIS>(new sht3xdis::SHT3XDIS(_mux->bus(busno), address));
