@@ -7,6 +7,8 @@ set(srcs
   sensors.cpp
   roland.hpp
   roland.cpp
+  sdcard.hpp
+  sdcard.cpp
   beehive_events.hpp
   beehive_events.cpp
   )
@@ -14,5 +16,5 @@ set(srcs
 idf_component_register(
   SRCS ${srcs}
   INCLUDE_DIRS "."
-  REQUIRES esp32deets nvs_flash mqtt
+  REQUIRES esp32deets nvs_flash mqtt fatfs
   )

@@ -2,6 +2,7 @@
 #include "mqtt.hpp"
 #include "sensors.hpp"
 #include "beehive_events.hpp"
+#include "sdcard.hpp"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -43,17 +44,18 @@ void app_main()
   setup_wifi();
 
   mqtt::MQTTClient mqtt_client;
+  sdcard::SDCardWriter sdcard_writer;
 
   // it seems if I don't bind this to core 0, the i2c
   // subsystem fails randomly.
   xTaskCreatePinnedToCore(sensor_task, "sensor", 8192, NULL, uxTaskPriorityGet(NULL), NULL, 0)
 ;
   beehive::events::config::mqtt::hostname("192.168.1.108");
+
   // keep this task alive so we retain
   // the stack-frame.
   while(true)
   {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
-    mqtt_client.publish("foobar", "baz");
   }
 }
