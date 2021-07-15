@@ -153,6 +153,9 @@ void SDCardWriter::file_rotation() {
   if(_file && _file->is_open() && _datapoints_written >= DATAPOINTS_PER_DAY)
   {
     _file->close();
+    struct stat statbuf;
+    stat(_filename.c_str(), &statbuf);
+    ESP_LOGI(TAG, "File %s size %li", _filename.c_str(), statbuf.st_size);
     _file = std::nullopt;
     ++_filename_index;
     _datapoints_written = 0;
@@ -163,10 +166,10 @@ void SDCardWriter::file_rotation() {
     const auto digits = 8 - strlen(FILE_PREFIX);
     const auto mask = (1 << (4 * digits)) - 1;
     ss << MOUNT_POINT << "/" << std::string(FILE_PREFIX) << std::hex << std::setw(digits) << std::setfill('0') << (_filename_index & mask)  << ".txt";
-    ESP_LOGE(TAG, "Opening file '%s'", ss.str().c_str());
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-    _file = std::ofstream(ss.str());
-    *_file << "SEQUENCE,BN,SA,HUMI,TEMP\r\n"
+    _filename = ss.str();
+    ESP_LOGE(TAG, "Opening file '%s'", _filename.c_str());
+    _file = std::ofstream(_filename);
+    *_file << "SEQUENCE,BN,SA,HUMI,TEMP\r\n";
   }
 }
 
@@ -190,12 +193,11 @@ void SDCardWriter::sensor_event_handler(esp_event_base_t base, beehive::events::
       for(const auto& reading : *readings)
       {
 	++_datapoints_written;
-	*_file << std,,hex << std,,setw(8) << std,,setfill('0') << _datapoint_index << ",";
-	*_file << std,,hex << std,,setw(2) << std,,setfill('0') << int(reading.busno) << ",";
-	*_file << std,,hex << std,,setw(2) << std,,setfill('0') << int(reading.address) << ",";
-	*_file << std,,hex << std,,setw(4) << std,,setfill('0') << int(reading.humidity) << ",";
+	*_file << std::hex << std::setw(8) << std::setfill('0') << _datapoint_index << ",";
+	*_file << std::hex << std::setw(2) << std::setfill('0') << int(reading.busno) << ",";
+	*_file << std::hex << std::setw(2) << std::setfill('0') << int(reading.address) << ",";
+	*_file << std::hex << std::setw(4) << std::setfill('0') << int(reading.humidity) << ",";
 	*_file << std::hex << std::setw(4) << std::setfill('0') << int(reading.temperature) << "\r\n";
-	_file->flush();
       }
     }
   }

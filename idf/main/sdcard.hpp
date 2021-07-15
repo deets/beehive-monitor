@@ -28,6 +28,7 @@ private:
   sdmmc_host_t _host;
 
   std::optional<std::ofstream> _file;
+  std::string _filename;
   size_t _filename_index;
   size_t _datapoint_index;
   size_t _datapoints_written;
