@@ -10,7 +10,6 @@
 #include <sys/unistd.h>
 #include <sys/stat.h>
 #include "esp_err.h"
-#include "esp_log.h"
 #include "esp_vfs_fat.h"
 #include "driver/sdspi_host.h"
 #include "driver/spi_common.h"
@@ -20,6 +19,9 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+
+//#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
+#include "esp_log.h"
 
 namespace beehive::sdcard {
 
@@ -176,7 +178,12 @@ void SDCardWriter::file_rotation() {
     }
 
     const auto mode = _datapoints_written == 0 ? "w" : "a";
-    ESP_LOGI(TAG, "Opening file '%s', mode: %s", _filename.c_str(), mode);
+    if(_datapoints_written == 0)
+    {
+      ESP_LOGI(TAG, "Creating SD card log file '%s'", _filename.c_str());
+    }
+    ESP_LOGD(TAG, "log file mode: '%s'", mode);
+
     _file = fopen(_filename.c_str(), mode);
 
     if(!_file)
