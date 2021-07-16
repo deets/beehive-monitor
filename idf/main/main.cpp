@@ -1,8 +1,9 @@
 #include "wifi.hh"
 #include "mqtt.hpp"
 #include "sensors.hpp"
-#include "beehive_events.hpp"
 #include "sdcard.hpp"
+#include "beehive_events.hpp"
+#include "beehive_http.hpp"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -51,6 +52,7 @@ void app_main()
   xTaskCreatePinnedToCore(sensor_task, "sensor", 8192, NULL, uxTaskPriorityGet(NULL), NULL, 0);
   beehive::events::config::mqtt::hostname("192.168.1.108");
 
+  beehive::http::HTTPServer http_server;
   // keep this task alive so we retain
   // the stack-frame.
   while(true)

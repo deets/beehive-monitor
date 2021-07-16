@@ -11,10 +11,12 @@ set(srcs
   sdcard.cpp
   beehive_events.hpp
   beehive_events.cpp
+  beehive_http.hpp
+  beehive_http.cpp
   )
 
 idf_component_register(
   SRCS ${srcs}
   INCLUDE_DIRS "."
-  REQUIRES esp32deets nvs_flash mqtt fatfs
+  REQUIRES esp_http_server nvs_flash mqtt fatfs esp32deets
   )
