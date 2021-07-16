@@ -176,7 +176,7 @@ void SDCardWriter::file_rotation() {
     }
 
     const auto mode = _datapoints_written == 0 ? "w" : "a";
-    ESP_LOGD(TAG, "Opening file '%s', mode: %s", _filename.c_str(), mode);
+    ESP_LOGI(TAG, "Opening file '%s', mode: %s", _filename.c_str(), mode);
     _file = fopen(_filename.c_str(), mode);
 
     if(!_file)
