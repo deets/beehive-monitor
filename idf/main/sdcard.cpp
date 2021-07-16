@@ -3,6 +3,7 @@
 #include "pins.hpp"
 
 #include <dirent.h>
+#include <fcntl.h>
 #include <fstream>
 #include <stdio.h>
 #include <string.h>
@@ -30,8 +31,7 @@ static const char *TAG = "sdcard";
 static const char* s_mount_point  = "/sdcard";
 
 #define FILE_PREFIX "BEE" // must be upper-case
-//#define DATAPOINTS_PER_DAY (12 * 24) // every 5 minutes, 24h a day
-#define DATAPOINTS_PER_DAY 12
+#define DATAPOINTS_PER_DAY (12 * 24) // every 5 minutes, 24h a day
 
 // DMA channel to be used by the SPI peripheral
 #ifndef SPI_DMA_CHAN
@@ -43,7 +43,7 @@ static const char* s_mount_point  = "/sdcard";
 } // namespace
 
 SDCardWriter::SDCardWriter()
-  : _file(std::nullopt)
+  : _file(nullptr)
   , _filename_index(0)
   , _datapoint_index(0)
   , _datapoints_written(0)
@@ -59,12 +59,6 @@ SDCardWriter::SDCardWriter()
     };
 
     ESP_LOGI(TAG, "Initializing SD card");
-
-    // Use settings defined above to initialize SD card and mount FAT filesystem.
-    // Note: esp_vfs_fat_sdmmc/sdspi_mount is all-in-one convenience functions.
-    // Please check its source code and implement error recovery when developing
-    // production applications.
-    ESP_LOGI(TAG, "Using SPI peripheral");
 
     _host = sdmmc_host_t SDSPI_HOST_DEFAULT();
     spi_bus_config_t bus_cfg = {
@@ -145,31 +139,57 @@ void SDCardWriter::setup_file_info()
     closedir(dp);
   }
   else
-    ESP_LOGE(TAG, "Couldn't open %s", s_mount_point);
+  {
+    ESP_LOGE(TAG, "Couldn't open %s in setup_file_info", s_mount_point);
+  }
+}
 
+void SDCardWriter::report_file_size()
+{
+  struct stat statbuf;
+  stat(_filename.c_str(), &statbuf);
+  ESP_LOGD(TAG, "File %s size %li", _filename.c_str(), statbuf.st_size);
 }
 
 void SDCardWriter::file_rotation() {
-  if(_file && _file->is_open() && _datapoints_written >= DATAPOINTS_PER_DAY)
+  if(_file)
   {
-    _file->close();
-    struct stat statbuf;
-    stat(_filename.c_str(), &statbuf);
-    ESP_LOGI(TAG, "File %s size %li", _filename.c_str(), statbuf.st_size);
-    _file = std::nullopt;
-    ++_filename_index;
-    _datapoints_written = 0;
+    fclose(_file);
+    _file = nullptr;
+
+    report_file_size();
+
+    if(_datapoints_written > DATAPOINTS_PER_DAY)
+    {
+      _datapoints_written = 0;
+    }
   }
-  if(!_file || !_file->is_open())
+  if(!_file)
   {
-    std::stringstream ss;
-    const auto digits = 8 - strlen(FILE_PREFIX);
-    const auto mask = (1 << (4 * digits)) - 1;
-    ss << MOUNT_POINT << "/" << std::string(FILE_PREFIX) << std::hex << std::setw(digits) << std::setfill('0') << (_filename_index & mask)  << ".txt";
-    _filename = ss.str();
-    ESP_LOGE(TAG, "Opening file '%s'", _filename.c_str());
-    _file = std::ofstream(_filename);
-    *_file << "SEQUENCE,BN,SA,HUMI,TEMP\r\n";
+    if(_datapoints_written == 0)
+    {
+      std::stringstream ss;
+      const auto digits = 8 - strlen(FILE_PREFIX);
+      const auto mask = (1 << (4 * digits)) - 1;
+      ss << MOUNT_POINT << "/" << std::string(FILE_PREFIX) << std::hex << std::setw(digits) << std::setfill('0') << (++_filename_index & mask)  << ".txt";
+      _filename = ss.str();
+    }
+
+    const auto mode = _datapoints_written == 0 ? "w" : "a";
+    ESP_LOGD(TAG, "Opening file '%s', mode: %s", _filename.c_str(), mode);
+    _file = fopen(_filename.c_str(), mode);
+
+    if(!_file)
+    {
+      ESP_LOGE(TAG, "error opening file %s: %i, %s", _filename.c_str(), errno, strerror(errno));
+    }
+
+    report_file_size();
+
+    if(_datapoints_written == 0)
+    {
+      fprintf(_file, "SEQUENCE,BN,SA,HUMI,TEMP\r\n");
+    }
   }
 }
 
@@ -187,18 +207,21 @@ void SDCardWriter::sensor_event_handler(esp_event_base_t base, beehive::events::
   file_rotation();
   if(readings)
   {
-    if(_file && _file->is_open())
+    if(_file)
     {
-      ESP_LOGI(TAG, "Writing data to the sdcard");
+      ESP_LOGD(TAG, "Writing data to the sdcard");
+      std::stringstream ss;
+
       for(const auto& reading : *readings)
       {
 	++_datapoints_written;
-	*_file << std::hex << std::setw(8) << std::setfill('0') << _datapoint_index << ",";
-	*_file << std::hex << std::setw(2) << std::setfill('0') << int(reading.busno) << ",";
-	*_file << std::hex << std::setw(2) << std::setfill('0') << int(reading.address) << ",";
-	*_file << std::hex << std::setw(4) << std::setfill('0') << int(reading.humidity) << ",";
-	*_file << std::hex << std::setw(4) << std::setfill('0') << int(reading.temperature) << "\r\n";
+	ss << std::hex << std::setw(8) << std::setfill('0') << _datapoint_index << ",";
+	ss << std::hex << std::setw(2) << std::setfill('0') << int(reading.busno) << ",";
+	ss << std::hex << std::setw(2) << std::setfill('0') << int(reading.address) << ",";
+	ss << std::hex << std::setw(4) << std::setfill('0') << int(reading.humidity) << ",";
+	ss << std::hex << std::setw(4) << std::setfill('0') << int(reading.temperature) << "\r\n";
       }
+      fprintf(_file, ss.str().c_str());
     }
   }
 }

@@ -48,8 +48,7 @@ void app_main()
 
   // it seems if I don't bind this to core 0, the i2c
   // subsystem fails randomly.
-  xTaskCreatePinnedToCore(sensor_task, "sensor", 8192, NULL, uxTaskPriorityGet(NULL), NULL, 0)
-;
+  xTaskCreatePinnedToCore(sensor_task, "sensor", 8192, NULL, uxTaskPriorityGet(NULL), NULL, 0);
   beehive::events::config::mqtt::hostname("192.168.1.108");
 
   // keep this task alive so we retain
