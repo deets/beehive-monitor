@@ -3,6 +3,8 @@ set(srcs
   main.cpp
   mqtt.hpp
   mqtt.cpp
+  ota.hpp
+  ota.cpp
   sensors.hpp
   sensors.cpp
   roland.hpp
