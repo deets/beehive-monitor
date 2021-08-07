@@ -1,6 +1,8 @@
 // Copyright: 2021, Diez B. Roggisch, Berlin, all rights reserved
 
 #include "beehive_events.hpp"
+#include "io-buttons.hpp"
+
 #include <cstring>
 #include <optional>
 
@@ -10,6 +12,7 @@ extern "C" {
 
 ESP_EVENT_DEFINE_BASE(CONFIG_EVENTS);
 ESP_EVENT_DEFINE_BASE(SENSOR_EVENTS);
+ESP_EVENT_DEFINE_BASE(BUTTON_EVENTS);
 
 
 #ifdef __cplusplus
@@ -31,6 +34,17 @@ struct config_event_mqtt_host_t
 
 } // namespace
 namespace beehive::events {
+
+namespace buttons {
+
+void register_button_callback(button_events_t e,
+                              std::function<void(button_events_t)> cb)
+{
+  beehive::iobuttons::register_button_callback(e, cb);
+}
+
+} // namespace buttons
+
 
 namespace sensors {
 

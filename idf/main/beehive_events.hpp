@@ -1,10 +1,13 @@
 // Copyright: 2021, Diez B. Roggisch, Berlin, all rights reserved
 #pragma once
+#include "pins.hpp"
+
 #include "esp_event.h"
 #include "esp_event_base.h"
 
 #include <optional>
 #include <vector>
+#include <functional>
 
 #ifdef __cplusplus
 extern "C" {
@@ -12,12 +15,25 @@ extern "C" {
 
   ESP_EVENT_DECLARE_BASE(CONFIG_EVENTS);
   ESP_EVENT_DECLARE_BASE(SENSOR_EVENTS);
+  ESP_EVENT_DECLARE_BASE(BUTTON_EVENTS);
 
 #ifdef __cplusplus
 }
 #endif
 
 namespace beehive::events {
+
+namespace buttons {
+
+enum button_events_t
+{
+  BUTTON_EVENT_OTA = PIN_NUM_OTA
+};
+
+void register_button_callback(button_events_t,
+                              std::function<void(button_events_t)>);
+
+}
 
 namespace sensors {
 

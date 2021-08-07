@@ -1,3 +1,4 @@
+#include "io-buttons.hpp"
 #include "wifi.hh"
 #include "mqtt.hpp"
 #include "sensors.hpp"
@@ -55,7 +56,13 @@ void app_main()
 
   beehive::http::HTTPServer http_server;
 
-  start_ota_task();
+  beehive::iobuttons::setup();
+
+  beehive::events::buttons::register_button_callback(
+    beehive::events::buttons::BUTTON_EVENT_OTA,
+    [](beehive::events::buttons::button_events_t) { start_ota_task(); }
+    );
+
   // keep this task alive so we retain
   // the stack-frame.
   while(true)
