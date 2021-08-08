@@ -13,6 +13,8 @@ set(srcs
   roland.cpp
   sdcard.hpp
   sdcard.cpp
+  smartconfig.hpp
+  smartconfig.cpp
   wifi-provisioning.hpp
   wifi-provisioning.cpp
   beehive_events.hpp

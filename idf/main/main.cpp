@@ -7,6 +7,7 @@
 #include "beehive_http.hpp"
 #include "ota.hpp"
 #include "wifi-provisioning.hpp"
+#include "smartconfig.hpp"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -69,8 +70,8 @@ void app_main()
       }
       else
       {
-	ESP_LOGI(TAG, "Not connected to WIFI, run provisioning");
-	beehive::wifi_provisioning::run();
+	ESP_LOGI(TAG, "Not connected to WIFI, run smartconfig");
+	beehive::smartconfig::run();
       }
     }
     );
