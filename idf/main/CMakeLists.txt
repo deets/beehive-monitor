@@ -13,6 +13,8 @@ set(srcs
   roland.cpp
   sdcard.hpp
   sdcard.cpp
+  wifi-provisioning.hpp
+  wifi-provisioning.cpp
   beehive_events.hpp
   beehive_events.cpp
   beehive_http.hpp
@@ -22,6 +24,6 @@ set(srcs
 idf_component_register(
   SRCS ${srcs}
   INCLUDE_DIRS "."
-  REQUIRES esp_http_server nvs_flash mqtt fatfs esp32deets app_update esp_http_client esp_https_ota
+  REQUIRES esp_http_server nvs_flash mqtt fatfs esp32deets app_update esp_http_client esp_https_ota wifi_provisioning protocomm bt
   EMBED_TXTFILES ${project_dir}/server_certs/ca_cert.pem
   )

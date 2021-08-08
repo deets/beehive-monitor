@@ -6,6 +6,7 @@
 #include "beehive_events.hpp"
 #include "beehive_http.hpp"
 #include "ota.hpp"
+#include "wifi-provisioning.hpp"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -60,7 +61,18 @@ void app_main()
 
   beehive::events::buttons::register_button_callback(
     beehive::events::buttons::BUTTON_EVENT_OTA,
-    [](beehive::events::buttons::button_events_t) { start_ota_task(); }
+    [](beehive::events::buttons::button_events_t) {
+      if(false && wifi_connected())
+      {
+	ESP_LOGI(TAG, "Connected to WIFI, run OTA");
+	start_ota_task();
+      }
+      else
+      {
+	ESP_LOGI(TAG, "Not connected to WIFI, run provisioning");
+	beehive::wifi_provisioning::run();
+      }
+    }
     );
 
   // keep this task alive so we retain
