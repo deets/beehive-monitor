@@ -22,16 +22,19 @@ private:
   void setup_file_info();
   void file_rotation();
   void report_file_size();
+  void count_datasets_written();
 
   sdmmc_card_t* _card;
   sdmmc_host_t _host;
 
   FILE* _file;
   std::string _filename;
+  // number of the filename to write to
   size_t _filename_index;
-  size_t _datapoint_index;
-  size_t _datapoints_written;
-
+  // number of datasets written in one file.
+  size_t _datasets_written;
+  // a globally running number for all datasets
+  size_t _total_datasets_written;
 };
 
 } // namespace beehive::sdcard

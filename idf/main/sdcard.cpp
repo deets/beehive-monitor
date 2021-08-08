@@ -20,7 +20,7 @@
 #include <sstream>
 #include <iomanip>
 
-//#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
+#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
 #include "esp_log.h"
 
 namespace beehive::sdcard {
@@ -33,22 +33,45 @@ static const char *TAG = "sdcard";
 static const char* s_mount_point  = "/sdcard";
 
 #define FILE_PREFIX "BEE" // must be upper-case
-#define DATAPOINTS_PER_DAY (12 * 24) // every 5 minutes, 24h a day
+#define DATASETS_PER_DAY (12 * 24) // every 5 minutes, 24h a day
 
 // DMA channel to be used by the SPI peripheral
 #ifndef SPI_DMA_CHAN
 #define SPI_DMA_CHAN    1
 #endif //SPI_DMA_CHAN
 
+size_t parse_line(size_t current_total_datasets_written,
+                  const std::vector<char> &line)
+{
+  ESP_LOGD(TAG, "look at line %s", line.data());
+  if(line.size() >= 11 && line[0] == '#') // #01234567,\r\n
+  {
+    const auto total_datasets_written = size_t(std::stoul(&line[1], nullptr, 16));
+    if(total_datasets_written > current_total_datasets_written)
+    {
+      ESP_LOGD(TAG, "computed total_datasets_written: %i", int(total_datasets_written));
+      return total_datasets_written;
+    }
+  }
+  return current_total_datasets_written;
+}
 
+std::string generate_filename(size_t filename_index)
+{
+  std::stringstream ss;
+  const auto digits = 8 - strlen(FILE_PREFIX);
+  const auto mask = (1 << (4 * digits)) - 1;
+  ss << MOUNT_POINT << "/" << std::string(FILE_PREFIX) << std::hex << std::setw(digits) << std::setfill('0') << (filename_index & mask)  << ".txt";
+  return ss.str();
+}
 
 } // namespace
 
 SDCardWriter::SDCardWriter()
   : _file(nullptr)
   , _filename_index(0)
-  , _datapoint_index(0)
-  , _datapoints_written(0)
+  , _datasets_written(0)
+  , _total_datasets_written(0)
 {
     esp_err_t ret;
     // Options for mounting the filesystem.
@@ -112,6 +135,56 @@ SDCardWriter::~SDCardWriter()
     spi_bus_free(spi_host_device_t(_host.slot));
 }
 
+void SDCardWriter::count_datasets_written()
+{
+  const auto fname = generate_filename(_filename_index);
+  auto f = fopen(fname.c_str(), "r");
+  if(f)
+  {
+    ESP_LOGD(TAG, "Counting newlines in %s", fname.c_str());
+
+    size_t newlines_counted = 0;
+    auto use_count = false;
+    std::array<char, 256> buffer;
+    std::vector<char> line_buffer;
+    while(true)
+    {
+      clearerr(f);
+      const auto read_bytes = fread(buffer.data(), 1, buffer.size(), f);
+      if(read_bytes == 0)
+      {
+	if(feof(f))
+	{
+	  use_count = true;
+	}
+	break;
+      }
+      for(size_t i=0; i < read_bytes; ++i)
+      {
+	const auto c = buffer[i];
+	line_buffer.push_back(c);
+	if(c == '\n')
+	{
+	  line_buffer.push_back(0);
+	  ++newlines_counted;
+	  _total_datasets_written = parse_line(_total_datasets_written, line_buffer);
+	  line_buffer.clear();
+	}
+      }
+
+    }
+    if(use_count)
+    {
+      ESP_LOGD(TAG, "Counted %i newlines", newlines_counted);
+      _datasets_written = newlines_counted;
+    }
+  }
+  else
+  {
+    ESP_LOGE(TAG, "Couldn't count open file '%s' to count", fname.c_str());
+  }
+}
+
 void SDCardWriter::setup_file_info()
 {
   const auto prefix_len = strlen(FILE_PREFIX);
@@ -128,17 +201,19 @@ void SDCardWriter::setup_file_info()
       ESP_LOGD(TAG, "Found file: '%s', compare length: %i, entry_len: %i", ep->d_name, compare_len, entry_len);
       if(strncmp(FILE_PREFIX, ep->d_name, compare_len) == 0)
       {
-	ESP_LOGD(TAG, "Found beehive file %s", ep->d_name);
+	const auto file_index_of_found_file = std::stoul(std::string(&ep->d_name[prefix_len]), nullptr, 16);
+	ESP_LOGD(TAG, "Found beehive file %s, %i", ep->d_name, int(file_index_of_found_file));
 	_filename_index = std::max(
 	  _filename_index,
-	  size_t(std::stoul(std::string(&ep->d_name[prefix_len]), nullptr, 16) + 1)
+	  size_t(file_index_of_found_file)
 	);
 	// In a first approximation, we derive the datapoint index from the
 	// number of entries per day
-	_datapoint_index = _filename_index * DATAPOINTS_PER_DAY;
+	_total_datasets_written = _filename_index * DATASETS_PER_DAY;
       }
     }
     closedir(dp);
+    count_datasets_written();
   }
   else
   {
@@ -161,24 +236,21 @@ void SDCardWriter::file_rotation() {
 
     report_file_size();
 
-    if(_datapoints_written > DATAPOINTS_PER_DAY)
+    if(_datasets_written > DATASETS_PER_DAY)
     {
-      _datapoints_written = 0;
+      _datasets_written = 0;
     }
   }
   if(!_file)
   {
-    if(_datapoints_written == 0)
+    if(_datasets_written == 0)
     {
-      std::stringstream ss;
-      const auto digits = 8 - strlen(FILE_PREFIX);
-      const auto mask = (1 << (4 * digits)) - 1;
-      ss << MOUNT_POINT << "/" << std::string(FILE_PREFIX) << std::hex << std::setw(digits) << std::setfill('0') << (++_filename_index & mask)  << ".txt";
-      _filename = ss.str();
+      ++_filename_index;
     }
+    _filename = generate_filename(_filename_index);
 
-    const auto mode = _datapoints_written == 0 ? "w" : "a";
-    if(_datapoints_written == 0)
+    const auto mode = _datasets_written == 0 ? "w" : "a";
+    if(_datasets_written == 0)
     {
       ESP_LOGI(TAG, "Creating SD card log file '%s'", _filename.c_str());
     }
@@ -190,13 +262,7 @@ void SDCardWriter::file_rotation() {
     {
       ESP_LOGE(TAG, "error opening file %s: %i, %s", _filename.c_str(), errno, strerror(errno));
     }
-
     report_file_size();
-
-    if(_datapoints_written == 0)
-    {
-      fprintf(_file, "SEQUENCE,BN,SA,HUMI,TEMP\r\n");
-    }
   }
 }
 
@@ -219,16 +285,18 @@ void SDCardWriter::sensor_event_handler(esp_event_base_t base, beehive::events::
       ESP_LOGD(TAG, "Writing data to the sdcard");
       std::stringstream ss;
 
+      ss << "#" << std::hex << std::setw(8) << std::setfill('0') << ++_total_datasets_written << ",";
+
       for(const auto& reading : *readings)
       {
-	++_datapoints_written;
-	ss << std::hex << std::setw(8) << std::setfill('0') << _datapoint_index << ",";
 	ss << std::hex << std::setw(2) << std::setfill('0') << int(reading.busno) << ",";
 	ss << std::hex << std::setw(2) << std::setfill('0') << int(reading.address) << ",";
 	ss << std::hex << std::setw(4) << std::setfill('0') << int(reading.humidity) << ",";
-	ss << std::hex << std::setw(4) << std::setfill('0') << int(reading.temperature) << "\r\n";
+	ss << std::hex << std::setw(4) << std::setfill('0') << int(reading.temperature) << ",";
       }
+      ss << "\r\n";
       fprintf(_file, ss.str().c_str());
+      ++_datasets_written;
     }
   }
 }
