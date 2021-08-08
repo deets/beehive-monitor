@@ -15,8 +15,8 @@ set(srcs
   sdcard.cpp
   smartconfig.hpp
   smartconfig.cpp
-  wifi-provisioning.hpp
-  wifi-provisioning.cpp
+  #wifi-provisioning.hpp
+  #wifi-provisioning.cpp
   beehive_events.hpp
   beehive_events.cpp
   beehive_http.hpp
@@ -26,6 +26,6 @@ set(srcs
 idf_component_register(
   SRCS ${srcs}
   INCLUDE_DIRS "."
-  REQUIRES esp_http_server nvs_flash mqtt fatfs esp32deets app_update esp_http_client esp_https_ota wifi_provisioning protocomm bt
+  REQUIRES esp_http_server nvs_flash mqtt fatfs esp32deets app_update esp_http_client esp_https_ota
   EMBED_TXTFILES ${project_dir}/server_certs/ca_cert.pem
   )
