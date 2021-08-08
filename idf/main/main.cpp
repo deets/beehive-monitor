@@ -13,6 +13,7 @@
 #include <freertos/task.h>
 #include <esp_heap_caps.h>
 #include <esp_log.h>
+#include <esp_sleep.h>
 #include <nvs_flash.h>
 
 extern "C" void app_main();
@@ -22,6 +23,8 @@ extern "C" void app_main();
 using namespace beehive;
 
 namespace {
+
+const int WAKEUP_TIME_SEC = 20;
 
 void sensor_task(void*)
 {
@@ -76,10 +79,17 @@ void app_main()
     }
     );
 
+
   // keep this task alive so we retain
   // the stack-frame.
   while(true)
   {
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    vTaskDelay(20000 / portTICK_PERIOD_MS);
   }
+
+
+  // printf("Enabling timer wakeup, %ds\n", WAKEUP_TIME_SEC);
+  // esp_sleep_enable_timer_wakeup(WAKEUP_TIME_SEC * 1000000);
+  // esp_deep_sleep_start();
+
 }
