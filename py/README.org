@@ -1,10 +1,4 @@
-* Beehive Monitor
-
-  This project aims to provide environmental information for a beehive
-  design to encourage co-habitation of [[https://en.wikipedia.org/wiki/Chelifer_cancroides][Chelifer cancroides]], the
-  house pseudoscorpion, with bees, in hopes of reducing or eliminating
-  the impact of the notorious [[https://en.wikipedia.org/wiki/Varroa_destructor][varroa mite]].
-
+* MicroPython
 
 ** Set up project
 
