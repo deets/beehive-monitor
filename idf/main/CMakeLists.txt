@@ -28,6 +28,6 @@ set(srcs
 idf_component_register(
   SRCS ${srcs}
   INCLUDE_DIRS "."
-  REQUIRES esp_http_server nvs_flash mqtt fatfs esp32deets app_update esp_http_client esp_https_ota
+  REQUIRES esp_http_server nvs_flash mqtt fatfs esp32deets app_update esp_http_client esp_https_ota mdns
   EMBED_TXTFILES ${project_dir}/server_certs/ca_cert.pem
   )

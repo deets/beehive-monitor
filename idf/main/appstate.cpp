@@ -13,9 +13,13 @@ namespace beehive::appstate {
 namespace {
 
 #define NVS_NAMESPACE "beehive"
-#define MQTT_HOSTNAME_DEFAULT "10.0.0.1"
 
+#define MQTT_HOSTNAME_DEFAULT "10.0.0.1"
 std::string s_mqtt_hostname;
+
+#define SYSTEM_NAME_DEFAULT "beehive"
+std::string s_system_name;
+
 nvs_handle s_nvs_handle;
 
 std::string hash(const char* arg)
@@ -73,11 +77,13 @@ void init()
 
   auto sr = NVSLoadStore<std::string>{};
 
-  if(
-    sr.restore(s_nvs_handle, hash("mqtt_hostname").c_str(), &s_mqtt_hostname) != ESP_OK
-    )
+  if(sr.restore(s_nvs_handle, hash("mqtt_hostname").c_str(), &s_mqtt_hostname) != ESP_OK)
   {
     s_mqtt_hostname = MQTT_HOSTNAME_DEFAULT;
+  }
+  if(sr.restore(s_nvs_handle, hash("system_name").c_str(), &s_system_name) != ESP_OK)
+  {
+    s_system_name = SYSTEM_NAME_DEFAULT;
   }
 
 }
@@ -87,4 +93,17 @@ void promote_configuration()
   beehive::events::config::mqtt::hostname(s_mqtt_hostname.c_str());
 }
 
+void set_mqtt_host(const std::string& host)
+{
+  auto sr = NVSLoadStore<std::string>{};
+  sr.store(s_nvs_handle, hash("mqtt_hostname").c_str(), host);
 }
+
+void set_system_name(const std::string& system_name) {
+  auto sr = NVSLoadStore<std::string>{};
+  sr.store(s_nvs_handle, hash("system_name").c_str(), system_name);
+}
+
+std::string system_name() { return s_system_name; }
+
+} // namespace beehive::appstate

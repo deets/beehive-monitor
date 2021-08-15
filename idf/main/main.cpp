@@ -17,7 +17,9 @@
 #include <esp_heap_caps.h>
 #include <esp_log.h>
 #include <esp_sleep.h>
+#include <mdns.h>
 #include <chrono>
+#include <sstream>
 
 extern "C" void app_main();
 
@@ -81,6 +83,23 @@ void mainloop(bool wait_for_events)
   }
 }
 
+void start_mdns_service()
+{
+    //initialize mDNS service
+    esp_err_t err = mdns_init();
+    if (err) {
+        printf("MDNS Init failed: %d\n", err);
+        return;
+    }
+
+    //set hostname
+    mdns_hostname_set(beehive::appstate::system_name().c_str());
+    mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
+    std::stringstream ss;
+    ss << beehive::appstate::system_name() << " webserver";
+    mdns_service_instance_name_set("_http", "_tcp", ss.str().c_str());
+}
+
 } // end ns anon
 
 void app_main()
@@ -93,6 +112,8 @@ void app_main()
   mqtt::MQTTClient mqtt_client;
   sdcard::SDCardWriter sdcard_writer;
   beehive::http::HTTPServer http_server;
+
+  start_mdns_service();
 
   // it seems if I don't bind this to core 0, the i2c
   // subsystem fails randomly.
