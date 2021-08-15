@@ -1,3 +1,4 @@
+#include "freertos/projdefs.h"
 #include "io-buttons.hpp"
 #include "wifi.hh"
 #include "mqtt.hpp"
@@ -8,23 +9,26 @@
 #include "ota.hpp"
 #include "wifi-provisioning.hpp"
 #include "smartconfig.hpp"
+#include "appstate.hpp"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include <freertos/event_groups.h>
 #include <esp_heap_caps.h>
 #include <esp_log.h>
 #include <esp_sleep.h>
-#include <nvs_flash.h>
+#include <chrono>
 
 extern "C" void app_main();
 
 #define TAG "main"
 
 using namespace beehive;
+using namespace std::chrono_literals;
 
 namespace {
 
-const int WAKEUP_TIME_SEC = 20;
+const auto WAKEUP_TIME_SEC = 300s;
 
 void sensor_task(void*)
 {
@@ -36,30 +40,63 @@ void sensor_task(void*)
   }
 }
 
+const int SDCARD_BIT = BIT0;
+
+void sdcard_event_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
+{
+  EventGroupHandle_t event_group = static_cast<EventGroupHandle_t>(event_handler_arg);
+  xEventGroupSetBits(event_group, SDCARD_BIT);
+}
+
+void mainloop(bool wait_for_events)
+{
+  if(wait_for_events)
+  {
+    auto event_group = xEventGroupCreate();
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(
+		      SDCARD_EVENTS,
+		      ESP_EVENT_ANY_ID,
+		      sdcard_event_handler, event_group, nullptr));
+
+
+    const auto bits = xEventGroupWaitBits(event_group, SDCARD_BIT, pdTRUE, pdFALSE, (10s / 1ms) / portTICK_PERIOD_MS);
+    if(bits & SDCARD_BIT)
+    {
+      ESP_LOGI(TAG, "SDCard woke us up");
+    }
+    else
+    {
+      ESP_LOGI(TAG, "Timeout woke us up");
+    }
+
+    esp_sleep_enable_timer_wakeup(WAKEUP_TIME_SEC / 1us);
+    esp_deep_sleep_start();
+  }
+  else
+  {
+    while(true)
+    {
+      vTaskDelay(20000 / portTICK_PERIOD_MS);
+    }
+  }
+}
+
 } // end ns anon
 
 void app_main()
 {
   ESP_ERROR_CHECK(esp_event_loop_create_default());
-
-  //Initialize NVS
-  esp_err_t ret = nvs_flash_init();
-  if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-    ESP_ERROR_CHECK(nvs_flash_erase());
-    ret = nvs_flash_init();
-  }
-  ESP_ERROR_CHECK(ret);
+  // must be early because it initialises NVS
+  beehive::appstate::init();
   setup_wifi();
 
   mqtt::MQTTClient mqtt_client;
   sdcard::SDCardWriter sdcard_writer;
+  beehive::http::HTTPServer http_server;
 
   // it seems if I don't bind this to core 0, the i2c
   // subsystem fails randomly.
   xTaskCreatePinnedToCore(sensor_task, "sensor", 8192, NULL, uxTaskPriorityGet(NULL), NULL, 0);
-  beehive::events::config::mqtt::hostname("192.168.1.108");
-
-  beehive::http::HTTPServer http_server;
 
   beehive::iobuttons::setup();
 
@@ -71,25 +108,17 @@ void app_main()
 	ESP_LOGI(TAG, "Connected to WIFI, run OTA");
 	start_ota_task();
       }
+
       else
       {
-	ESP_LOGI(TAG, "Not connected to WIFI, run smartconfig");
+	ESP_LOGI(TAG, "Not connected to WIFI, running smartconfig");
 	beehive::smartconfig::run();
       }
     }
     );
 
-
-  // keep this task alive so we retain
-  // the stack-frame.
-  while(true)
-  {
-    vTaskDelay(20000 / portTICK_PERIOD_MS);
-  }
-
-
-  // printf("Enabling timer wakeup, %ds\n", WAKEUP_TIME_SEC);
-  // esp_sleep_enable_timer_wakeup(WAKEUP_TIME_SEC * 1000000);
-  // esp_deep_sleep_start();
-
+  // right before we go into our mainloop
+  // we need to broadcast our configured state.
+  beehive::appstate::promote_configuration();
+  mainloop(false);
 }

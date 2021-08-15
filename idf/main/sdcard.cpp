@@ -1,5 +1,6 @@
 // Copyright: 2021, Diez B. Roggisch, Berlin, all rights reserved
 #include "sdcard.hpp"
+#include "beehive_events.hpp"
 #include "pins.hpp"
 
 #include <dirent.h>
@@ -229,17 +230,9 @@ void SDCardWriter::report_file_size()
 }
 
 void SDCardWriter::file_rotation() {
-  if(_file)
+  if(_datasets_written > DATASETS_PER_DAY)
   {
-    fclose(_file);
-    _file = nullptr;
-
-    report_file_size();
-
-    if(_datasets_written > DATASETS_PER_DAY)
-    {
-      _datasets_written = 0;
-    }
+    _datasets_written = 0;
   }
   if(!_file)
   {
@@ -270,7 +263,6 @@ void SDCardWriter::file_rotation() {
 void SDCardWriter::s_sensor_event_handler(void *handler_args,
                                         esp_event_base_t base, int32_t id,
                                         void *event_data) {
-
   static_cast<SDCardWriter*>(handler_args)->sensor_event_handler(base, beehive::events::sensors::sensor_events_t(id), event_data);
 }
 
@@ -297,6 +289,22 @@ void SDCardWriter::sensor_event_handler(esp_event_base_t base, beehive::events::
       ss << "\r\n";
       fprintf(_file, ss.str().c_str());
       ++_datasets_written;
+
+      // We close the file here because
+      // the event will trigger the deep sleep of the
+      // system. And we want to be sure we have written all
+      // data.
+      fclose(_file);
+      _file = nullptr;
+      report_file_size();
+
+      esp_event_post(
+	SDCARD_EVENTS, beehive::events::sdcard::DATASET_WRITTEN, nullptr, 0, 0);
+    }
+    else
+    {
+      esp_event_post(
+	SDCARD_EVENTS, beehive::events::sdcard::NO_FILE, nullptr, 0, 0);
     }
   }
 }

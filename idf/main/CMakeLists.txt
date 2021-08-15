@@ -3,6 +3,8 @@ set(srcs
   main.cpp
   mqtt.hpp
   mqtt.cpp
+  appstate.hpp
+  appstate.cpp
   ota.hpp
   ota.cpp
   io-buttons.hpp

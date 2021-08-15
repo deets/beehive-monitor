@@ -16,6 +16,7 @@ extern "C" {
   ESP_EVENT_DECLARE_BASE(CONFIG_EVENTS);
   ESP_EVENT_DECLARE_BASE(SENSOR_EVENTS);
   ESP_EVENT_DECLARE_BASE(BUTTON_EVENTS);
+  ESP_EVENT_DECLARE_BASE(SDCARD_EVENTS);
 
 #ifdef __cplusplus
 }
@@ -55,6 +56,17 @@ std::optional<std::vector<sht3xdis_value_t>> receive_readings(sensor_events_t,
                                                               void *event_data);
 
 } // namespace sensors
+
+namespace sdcard {
+
+
+enum sdcard_events_t
+{
+  DATASET_WRITTEN,
+  NO_FILE
+};
+
+}
 
 namespace config {
 
