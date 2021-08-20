@@ -5,6 +5,7 @@
 #include "hal/gpio_types.h"
 
 #define PIN_NUM_OTA gpio_num_t(0)
+#define PIN_NUM_MODE gpio_num_t(25)
 
 // Pin mapping when using SPI mode.
 // With this mapping, SD card can be used both in SPI and 1-line SD mode.

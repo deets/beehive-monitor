@@ -28,7 +28,8 @@ namespace buttons {
 
 enum button_events_t
 {
-  BUTTON_EVENT_OTA = PIN_NUM_OTA
+  OTA = PIN_NUM_OTA,
+  MODE = PIN_NUM_MODE
 };
 
 void register_button_callback(button_events_t,

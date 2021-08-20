@@ -12,4 +12,6 @@ using button_events_t = beehive::events::buttons::button_events_t;
 void register_button_callback(button_events_t,
                               std::function<void(button_events_t)>);
 
+bool mode_on();
+
 }

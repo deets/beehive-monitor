@@ -23,7 +23,8 @@ namespace {
 const int DEBOUNCE = (200 * 1000);
 
 std::unordered_map<int, uint64_t> s_debounces = {
-  { PIN_NUM_OTA, 200 * 1000}
+  { PIN_NUM_OTA, 200 * 1000},
+  { PIN_NUM_MODE, 200 * 1000}
 };
 
 std::map<button_events_t, std::list<std::function<void(button_events_t)>>> s_button_callbacks;
@@ -49,7 +50,7 @@ void s_button_event_handler(void *event_handler_arg,
                             esp_event_base_t event_base, int32_t event_id,
                             void *event_data)
 {
-  ESP_LOGE(TAG, "s_button_event_handler");
+  ESP_LOGD(TAG, "s_button_event_handler");
   const auto event = static_cast<button_events_t>(event_id);
   for(auto& cb : s_button_callbacks[event])
   {
@@ -66,7 +67,8 @@ void setup()
   //interrupt of rising edge
   io_conf.intr_type = (gpio_int_type_t)GPIO_PIN_INTR_POSEDGE;
   io_conf.pin_bit_mask = \
-  (1ULL<< PIN_NUM_OTA);
+  (1ULL<< PIN_NUM_OTA) |
+  (1ULL<< PIN_NUM_MODE);
 
   //set as input mode
   io_conf.mode = GPIO_MODE_INPUT;
@@ -77,7 +79,10 @@ void setup()
   // install global GPIO ISR handler
   gpio_install_isr_service(0);
   // install individual interrupts
-  gpio_isr_handler_add(PIN_NUM_OTA, gpio_isr_handler, (void*)PIN_NUM_OTA);
+  for(const auto pin : { PIN_NUM_OTA, PIN_NUM_MODE})
+  {
+    gpio_isr_handler_add(pin, gpio_isr_handler, (void*)pin);
+  }
   // fill map to avoid allocates in ISR
   int64_t ts = esp_timer_get_time();
   for(const auto& item : s_debounces)
@@ -97,5 +102,7 @@ void register_button_callback(button_events_t e,
 {
   s_button_callbacks[e].push_back(cb);
 }
+
+bool mode_on() { return gpio_get_level(PIN_NUM_MODE) == 0; }
 
 } // namespace beehive::iobuttons

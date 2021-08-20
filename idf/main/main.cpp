@@ -122,19 +122,25 @@ void app_main()
   beehive::iobuttons::setup();
 
   beehive::events::buttons::register_button_callback(
-    beehive::events::buttons::BUTTON_EVENT_OTA,
+    beehive::events::buttons::OTA,
     [](beehive::events::buttons::button_events_t) {
       if(false && wifi_connected())
       {
 	ESP_LOGI(TAG, "Connected to WIFI, run OTA");
 	start_ota_task();
       }
-
       else
       {
 	ESP_LOGI(TAG, "Not connected to WIFI, running smartconfig");
 	beehive::smartconfig::run();
       }
+    }
+    );
+
+  beehive::events::buttons::register_button_callback(
+    beehive::events::buttons::MODE,
+    [](beehive::events::buttons::button_events_t) {
+      ESP_LOGI(TAG, "MODE switch: %s", (beehive::iobuttons::mode_on() ? "ON" : "OFF"));
     }
     );
 
