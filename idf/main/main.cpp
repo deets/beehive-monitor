@@ -30,7 +30,6 @@ using namespace std::chrono_literals;
 
 namespace {
 
-const auto WAKEUP_TIME_SEC = 300s;
 
 void sensor_task(void*)
 {
@@ -71,7 +70,8 @@ void mainloop(bool wait_for_events)
       ESP_LOGI(TAG, "Timeout woke us up");
     }
 
-    esp_sleep_enable_timer_wakeup(WAKEUP_TIME_SEC / 1us);
+    ESP_LOGI(TAG, "Sleeping for %i seconds", beehive::appstate::sleeptime());
+    esp_sleep_enable_timer_wakeup(std::chrono::seconds(beehive::appstate::sleeptime()) / 1us);
     esp_deep_sleep_start();
   }
   else

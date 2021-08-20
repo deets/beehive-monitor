@@ -26,7 +26,7 @@ MQTTClient::MQTTClient()
     MQTTClient::s_handle_mqtt_event, this);
   esp_mqtt_client_start(_client);
 
-  ESP_ERROR_CHECK(esp_event_handler_instance_register(CONFIG_EVENTS, beehive::events::config::CONFIG_EVENT_MQTT_HOST, MQTTClient::s_config_event_handler, this, NULL));
+  ESP_ERROR_CHECK(esp_event_handler_instance_register(CONFIG_EVENTS, beehive::events::config::MQTT_HOST, MQTTClient::s_config_event_handler, this, NULL));
   ESP_ERROR_CHECK(esp_event_handler_instance_register(SENSOR_EVENTS, beehive::events::sensors::SENSOR_EVENT_SHT3XDIS_READINGS, MQTTClient::s_sensor_event_handler, this, NULL));
 }
 
@@ -88,16 +88,20 @@ void MQTTClient::config_event_handler(esp_event_base_t base, beehive::events::co
 {
   switch(id)
   {
-  case beehive::events::config::CONFIG_EVENT_MQTT_HOST:
+  case beehive::events::config::MQTT_HOST:
     {
       const auto hostname = beehive::events::config::mqtt::hostname(id, event_data);
       if(hostname)
       {
-	ESP_LOGE(TAG, "CONFIG_EVENT_MQTT_HOST: %s", hostname->c_str());
+	ESP_LOGE(TAG, "MQTT_HOST: %s", hostname->c_str());
 	_config.host = hostname->c_str();
 	esp_mqtt_set_config(_client, &_config);
       }
     }
+    break;
+    // All ignored
+  case beehive::events::config::SYSTEM_NAME:
+  case beehive::events::config::SLEEPTIME:
     break;
   }
 }

@@ -41,7 +41,16 @@ HTTPServer::HTTPServer()
       {
 	const auto hostname = body["mqtt_hostname"].get<std::string>();
 	beehive::appstate::set_mqtt_host(hostname);
-	beehive::events::config::mqtt::hostname(hostname.c_str());
+      }
+      if(body.contains("system_name") && body["system_name"].is_string())
+      {
+	const auto system_name = body["system_name"].get<std::string>();
+	beehive::appstate::set_system_name(system_name);
+      }
+      if(body.contains("sleeptime") && body["sleeptime"].is_number())
+      {
+	const auto sleeptime = body["sleeptime"].get<uint32_t>();
+	beehive::appstate::set_sleeptime(sleeptime);
       }
 
       json j2 = {

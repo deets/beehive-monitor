@@ -13,4 +13,7 @@ void set_mqtt_host(const std::string &);
 void set_system_name(const std::string &);
 std::string system_name();
 
+void set_sleeptime(uint32_t);
+uint32_t sleeptime();
+
 }

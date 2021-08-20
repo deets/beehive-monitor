@@ -72,8 +72,13 @@ namespace config {
 
 enum config_events_t
 {
-  CONFIG_EVENT_MQTT_HOST
+  MQTT_HOST,
+  SYSTEM_NAME,
+  SLEEPTIME
 };
+
+void system_name(const char *system_name);
+void sleeptime(uint32_t sleeptime);
 
 namespace mqtt {
 

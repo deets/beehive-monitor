@@ -27,9 +27,9 @@ struct sht3xdis_event_t
   beehive::events::sensors::sht3xdis_value_t values[1];
 };
 
-struct config_event_mqtt_host_t
+struct config_event_name_t
 {
-  char host[200];
+  char name[200];
 };
 
 } // namespace
@@ -88,23 +88,37 @@ std::optional<std::vector<sht3xdis_value_t>> receive_readings(sensor_events_t ki
 
 } // namespace sensors
 
-namespace config::mqtt {
+namespace config {
+
+void system_name(const char *system_name)
+{
+  config_event_name_t config;
+  strncpy(config.name, system_name, sizeof(config_event_name_t::name));
+  esp_event_post(CONFIG_EVENTS, SYSTEM_NAME, (void*)&config, sizeof(config), 0);
+}
+
+void sleeptime(uint32_t sleeptime)
+{
+  esp_event_post(CONFIG_EVENTS, SLEEPTIME, (void*)&sleeptime, sizeof(sleeptime), 0);
+}
+
+namespace mqtt {
 
 void hostname(const char *hostname)
 {
-  config_event_mqtt_host_t config;
-  strncpy(config.host, hostname, sizeof(config_event_mqtt_host_t::host));
-  esp_event_post(CONFIG_EVENTS, CONFIG_EVENT_MQTT_HOST, (void*)&config, sizeof(config), 0);
+  config_event_name_t config;
+  strncpy(config.name, hostname, sizeof(config_event_name_t::name));
+  esp_event_post(CONFIG_EVENTS, MQTT_HOST, (void*)&config, sizeof(config), 0);
 }
 
 std::optional<std::string> hostname(config_events_t kind, void* event_data)
 {
   switch(kind)
   {
-  case CONFIG_EVENT_MQTT_HOST:
+  case MQTT_HOST:
     {
-      const auto config = (config_event_mqtt_host_t*)event_data;
-      return std::string{config->host, strlen(config->host)};
+      const auto config = (config_event_name_t*)event_data;
+      return std::string{config->name, strlen(config->name)};
     }
     break;
   default:
@@ -112,6 +126,8 @@ std::optional<std::string> hostname(config_events_t kind, void* event_data)
   }
 }
 
-} // namespace config::mqtt
+} // namespace mqtt
+
+} // namespace config
 
 } // namespace beehive::events
