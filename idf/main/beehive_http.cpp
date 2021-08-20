@@ -1,6 +1,9 @@
 // Copyright: 2021, Diez B. Roggisch, Berlin, all rights reserved
 
 #include "beehive_http.hpp"
+#include "appstate.hpp"
+#include "beehive_events.hpp"
+
 #include "nlohmann/json.hpp"
 
 namespace beehive::http {
@@ -32,24 +35,21 @@ HTTPServer::HTTPServer()
       return ESP_OK;
     });
   _server.register_handler(
-    "/json", HTTP_GET,
-    [](const json&) -> json {
+    "/configuration", HTTP_POST,
+    [](const json& body) -> json {
+      if(body.contains("mqtt_hostname") && body["mqtt_hostname"].is_string())
+      {
+	const auto hostname = body["mqtt_hostname"].get<std::string>();
+	beehive::appstate::set_mqtt_host(hostname);
+	beehive::events::config::mqtt::hostname(hostname.c_str());
+      }
+
       json j2 = {
-	{"pi", 3.141},
-	{"happy", true},
-	{"name", "Niels"},
-	{"nothing", nullptr},
-	{"answer", {
-	    {"everything", 42}
-	  }},
-	{"list", {1, 0, 2}},
-	{"object", {
-	    {"currency", "USD"},
-	    {"value", 42.99}
-	  }}
+	{"status", "ok"}
       };
       return j2;
     });
+
   _server.start();
 }
 
