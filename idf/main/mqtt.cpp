@@ -15,7 +15,8 @@
 
 namespace beehive::mqtt {
 
-MQTTClient::MQTTClient()
+MQTTClient::MQTTClient(size_t counter)
+  : _counter(counter)
 {
   std::memset(&_config, 0, sizeof(esp_mqtt_client_config_t));
   _config.user_context = this;
@@ -134,7 +135,7 @@ void MQTTClient::sensor_event_handler(esp_event_base_t base, beehive::events::se
   const auto readings = beehive::events::sensors::receive_readings(id, event_data);
   if(readings)
   {
-    roland::publish(*readings, [this](const char *topic, const char *data, int len, int qos, int retain) { publish(topic, data, len, qos, retain);});
+    roland::publish(++_counter, *readings, [this](const char *topic, const char *data, int len, int qos, int retain) { publish(topic, data, len, qos, retain);});
   }
 }
 

@@ -32,6 +32,7 @@ static const char *TAG = "sdcard";
 
 #define MOUNT_POINT "/sdcard"
 static const char* s_mount_point  = "/sdcard";
+static const char *FILE_FORMAT_VERSION = "V1,";
 
 #define FILE_PREFIX "BEE" // must be upper-case
 #define DATASETS_PER_DAY (12 * 24) // every 5 minutes, 24h a day
@@ -45,9 +46,10 @@ size_t parse_line(size_t current_total_datasets_written,
                   const std::vector<char> &line)
 {
   ESP_LOGD(TAG, "look at line %s", line.data());
-  if(line.size() >= 11 && line[0] == '#') // #01234567,\r\n
+  const auto prefixlen = 1 + strlen(FILE_FORMAT_VERSION);
+  if(line.size() >= 11 && line[0] == '#') // #{FILE_FORMAT_VERSION}01234567,\r\n
   {
-    const auto total_datasets_written = size_t(std::stoul(&line[1], nullptr, 16));
+    const auto total_datasets_written = size_t(std::stoul(&line[prefixlen], nullptr, 16));
     if(total_datasets_written > current_total_datasets_written)
     {
       ESP_LOGD(TAG, "computed total_datasets_written: %i", int(total_datasets_written));
@@ -277,14 +279,14 @@ void SDCardWriter::sensor_event_handler(esp_event_base_t base, beehive::events::
       ESP_LOGD(TAG, "Writing data to the sdcard");
       std::stringstream ss;
 
-      ss << "#" << std::hex << std::setw(8) << std::setfill('0') << ++_total_datasets_written << ",";
+      ss << "#" << FILE_FORMAT_VERSION << std::hex << std::setw(8) << std::setfill('0') << ++_total_datasets_written << ",";
 
       for(const auto& reading : *readings)
       {
 	ss << std::hex << std::setw(2) << std::setfill('0') << int(reading.busno) << ",";
 	ss << std::hex << std::setw(2) << std::setfill('0') << int(reading.address) << ",";
-	ss << std::hex << std::setw(4) << std::setfill('0') << int(reading.humidity) << ",";
-	ss << std::hex << std::setw(4) << std::setfill('0') << int(reading.temperature) << ",";
+	ss << "H" << std::hex << std::setw(4) << std::setfill('0') << int(reading.raw_humidity) << ",";
+	ss << "T" << std::hex << std::setw(4) << std::setfill('0') << int(reading.raw_temperature) << ",";
       }
       ss << "\r\n";
       fprintf(_file, ss.str().c_str());

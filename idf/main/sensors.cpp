@@ -2,15 +2,53 @@
 
 #include "sensors.hpp"
 #include "beehive_events.hpp"
+#include "esp_timer.h"
 #include "pins.hpp"
 
 #include "i2c.hh"
 #include "tca9548a.hpp"
 #include "sht3xdis.hpp"
 
+#include "sdkconfig.h"
+
 #include <esp_log.h>
+#include <math.h>
 
 #define TAG "sensors"
+
+namespace {
+
+using namespace beehive::events::sensors;
+
+const double HZ = 0.1;
+
+void fake_sensor_data(std::vector<sht3xdis_value_t>& readings)
+{
+  for(const auto busno : { 10, 11 })
+  {
+    for(const auto address : { 44, 45 })
+    {
+      const auto seconds = double(esp_timer_get_time()) / 1000000.0;
+      const auto s = sin(seconds * HZ);
+      const auto c = cos(seconds * HZ);
+      const auto raw_humidity = uint16_t(30000.0 + 20000.0 * s);
+      const auto raw_temperature = uint16_t(10000.0 + 5000.0 * c);
+      const auto humidity = sht3xdis::SHT3XDIS::raw2humidity(raw_humidity);
+      const auto temperature = sht3xdis::SHT3XDIS::raw2temperature(raw_temperature);
+      readings.push_back(
+	{
+	  uint8_t(busno), uint8_t(address),
+	  humidity,
+	  temperature,
+	  raw_humidity,
+	  raw_temperature
+      });
+
+    }
+  }
+}
+
+} // namespace
 
 
 
@@ -43,9 +81,19 @@ void Sensors::work()
 
   for(auto& entry : _sensors)
   {
-    const auto values = entry.sensor->raw_values();
-    readings.push_back({ entry.busno, entry.address, values.humidity, values.temperature });
+    const auto raw_values = entry.sensor->raw_values();
+    const auto values = entry.sensor->values();
+    readings.push_back(
+      {
+	entry.busno, entry.address,
+	values.humidity,
+	values.temperature,
+	raw_values.humidity,
+	raw_values.temperature
+      });
   }
-
+  #ifdef CONFIG_BEEHIVE_FAKE_SENSOR_DATA
+  fake_sensor_data(readings);
+  #endif
   send_readings(readings);
 }

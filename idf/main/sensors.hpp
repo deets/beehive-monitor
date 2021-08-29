@@ -28,6 +28,7 @@ public:
   void work();
 
 private:
+
   std::unique_ptr<I2C> _bus;
   std::unique_ptr<TCA9548A> _mux;
   std::vector<sensor_t> _sensors;

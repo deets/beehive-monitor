@@ -9,6 +9,7 @@
 namespace beehive::mqtt::roland {
 
 void publish(
+  const size_t counter,
   const std::vector<events::sensors::sht3xdis_value_t> &readings,
   std::function < void(const char *topic, const char *data, int len, int qos, int retain)> publish
   );

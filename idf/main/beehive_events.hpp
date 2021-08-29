@@ -58,8 +58,10 @@ struct sht3xdis_value_t
 {
   uint8_t busno;
   uint8_t address;
-  uint16_t humidity;
-  uint16_t temperature;
+  float humidity;
+  float temperature;
+  uint16_t raw_humidity;
+  uint16_t raw_temperature;
 };
 
 void send_readings(const std::vector<sht3xdis_value_t> &);

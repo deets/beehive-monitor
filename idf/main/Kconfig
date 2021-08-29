@@ -1,0 +1,5 @@
+config BEEHIVE_FAKE_SENSOR_DATA
+    bool "Fake sensor data"
+    default false
+    help
+        When true, generate fake sensor readings

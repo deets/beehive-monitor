@@ -11,7 +11,7 @@ namespace beehive::mqtt {
 class MQTTClient
 {
 public:
-  MQTTClient();
+  MQTTClient(size_t counter);
 
   int publish(const char *topic, const char *data, int len=0, int qos=0, int retain=0);
 private:
@@ -30,6 +30,8 @@ private:
 
   char _client_id[200];
   char _hostname[200];
+
+  size_t _counter;
 };
 
 } // namespace beehive::mqtt

@@ -67,8 +67,9 @@ void mqtt_event_handler(void *event_handler_arg, esp_event_base_t event_base, in
 bool stay_awake()
 {
   const auto mode = beehive::iobuttons::mode_on();
-  ESP_LOGI(TAG, "stay_awake mode: %i, s_caffeine: %i", mode, s_caffeine);
-  return s_caffeine || mode;
+  const auto res = s_caffeine || mode;
+  ESP_LOGI(TAG, "stay_awake mode: %i, s_caffeine: %i -> %i", mode, s_caffeine, res);
+  return res;
 }
 
 void mainloop()
@@ -97,17 +98,12 @@ void mainloop()
 		      mqtt_event_handler, event_group, nullptr));
 
 
-    const auto bits = xEventGroupWaitBits(event_group, SDCARD_BIT | MQTT_PUBLISHED_BIT, pdTRUE, pdFALSE, (SLEEP_CONDITION_TIMEOUT / 1ms) / portTICK_PERIOD_MS);
-    if(bits & SDCARD_BIT || bits & MQTT_PUBLISHED_BIT)
+    const auto bits = xEventGroupWaitBits(event_group, SDCARD_BIT | MQTT_PUBLISHED_BIT, pdTRUE, pdTRUE, (SLEEP_CONDITION_TIMEOUT / 1ms) / portTICK_PERIOD_MS);
+    // the bits that arrived are still set! So even if we timeout,
+    // some bits are set.
+    if((bits & SDCARD_BIT) && (bits & MQTT_PUBLISHED_BIT))
     {
-      if(bits & SDCARD_BIT)
-      {
-	ESP_LOGI(TAG, "SDCard woke us up");
-      }
-      if(bits & MQTT_PUBLISHED_BIT)
-      {
-	ESP_LOGI(TAG, "MQTT woke us up");
-      }
+      ESP_LOGI(TAG, "SDCard & MQTT woke us up");
     }
     else
     {
@@ -174,8 +170,9 @@ void app_main()
   start_mdns_service();
   // we first need to setup wifi, because otherwise
   // MQTT fails due to missing network stack initialisation!
-  mqtt::MQTTClient mqtt_client;
   sdcard::SDCardWriter sdcard_writer;
+  mqtt::MQTTClient mqtt_client(sdcard_writer.total_datasets_written());
+
   beehive::http::HTTPServer http_server;
 
   // right before we go into our mainloop
