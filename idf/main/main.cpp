@@ -11,6 +11,7 @@
 #include "smartconfig.hpp"
 #include "appstate.hpp"
 
+#include "mqtt_client.h"
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/event_groups.h>
@@ -31,6 +32,9 @@ using namespace std::chrono_literals;
 namespace {
 
 const int SDCARD_BIT = BIT0;
+const int MQTT_PUBLISHED_BIT = BIT1;
+const auto SLEEP_CONDITION_TIMEOUT = 30s;
+
 bool s_caffeine = false;
 
 void sensor_task(void*)
@@ -53,6 +57,12 @@ void sdcard_event_handler(void *event_handler_arg, esp_event_base_t event_base, 
   xEventGroupSetBits(event_group, SDCARD_BIT);
 }
 
+void mqtt_event_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
+{
+  EventGroupHandle_t event_group = static_cast<EventGroupHandle_t>(event_handler_arg);
+  xEventGroupSetBits(event_group, MQTT_PUBLISHED_BIT);
+}
+
 
 bool stay_awake()
 {
@@ -73,16 +83,31 @@ void mainloop()
   else
   {
     auto event_group = xEventGroupCreate();
+    // Any SDCard event means either we could successfully
+    // write *or* there was an unrecoverable error - so we
+    // don't discriminate and just set the bit always
     ESP_ERROR_CHECK(esp_event_handler_instance_register(
 		      SDCARD_EVENTS,
 		      ESP_EVENT_ANY_ID,
 		      sdcard_event_handler, event_group, nullptr));
 
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(
+		      BEEHIVE_MQTT_EVENTS,
+		      beehive::events::mqtt::PUBLISHED,
+		      mqtt_event_handler, event_group, nullptr));
 
-    const auto bits = xEventGroupWaitBits(event_group, SDCARD_BIT, pdTRUE, pdFALSE, (10s / 1ms) / portTICK_PERIOD_MS);
-    if(bits & SDCARD_BIT)
+
+    const auto bits = xEventGroupWaitBits(event_group, SDCARD_BIT | MQTT_PUBLISHED_BIT, pdTRUE, pdFALSE, (SLEEP_CONDITION_TIMEOUT / 1ms) / portTICK_PERIOD_MS);
+    if(bits & SDCARD_BIT || bits & MQTT_PUBLISHED_BIT)
     {
-      ESP_LOGI(TAG, "SDCard woke us up");
+      if(bits & SDCARD_BIT)
+      {
+	ESP_LOGI(TAG, "SDCard woke us up");
+      }
+      if(bits & MQTT_PUBLISHED_BIT)
+      {
+	ESP_LOGI(TAG, "MQTT woke us up");
+      }
     }
     else
     {

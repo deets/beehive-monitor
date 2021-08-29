@@ -27,6 +27,9 @@ private:
 
   esp_mqtt_client_config_t _config;
   esp_mqtt_client_handle_t _client;
+
+  char _client_id[200];
+  char _hostname[200];
 };
 
 } // namespace beehive::mqtt

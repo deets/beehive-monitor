@@ -139,7 +139,7 @@ void set_system_name(const std::string& system_name) {
   beehive::events::config::system_name(s_system_name.c_str());
 }
 
-std::string system_name() { return s_system_name; }
+const std::string& system_name() { return s_system_name; }
 
 void set_sleeptime(uint32_t sleeptime) {
   s_sleeptime = sleeptime;

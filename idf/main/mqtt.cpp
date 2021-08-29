@@ -1,12 +1,15 @@
 // Copyright: 2021, Diez B. Roggisch, Berlin, all rights reserved
 
 #include "mqtt.hpp"
+#include "appstate.hpp"
 #include "beehive_events.hpp"
 #include "roland.hpp"
 #include "mqtt_client.h"
 
 #include <esp_log.h>
 #include <cstring>
+
+//#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
 
 #define TAG "mqtt"
 
@@ -16,9 +19,12 @@ MQTTClient::MQTTClient()
 {
   std::memset(&_config, 0, sizeof(esp_mqtt_client_config_t));
   _config.user_context = this;
+  std::strncpy(_client_id, beehive::appstate::system_name().c_str(), sizeof(_client_id));
   // we *must* give a host, otherwise the
   // next call bails out.
-  _config.host = "127.0.0.1";
+  std::strncpy(_hostname, "127.0.0.1", sizeof(_hostname));
+  _config.client_id = _client_id;
+  _config.host = _hostname;
   _client = esp_mqtt_client_init(&_config);
   esp_mqtt_client_register_event(
     _client,
@@ -26,7 +32,7 @@ MQTTClient::MQTTClient()
     MQTTClient::s_handle_mqtt_event, this);
   esp_mqtt_client_start(_client);
 
-  ESP_ERROR_CHECK(esp_event_handler_instance_register(CONFIG_EVENTS, beehive::events::config::MQTT_HOST, MQTTClient::s_config_event_handler, this, NULL));
+  ESP_ERROR_CHECK(esp_event_handler_instance_register(CONFIG_EVENTS, esp_mqtt_event_id_t(ESP_EVENT_ANY_ID), MQTTClient::s_config_event_handler, this, NULL));
   ESP_ERROR_CHECK(esp_event_handler_instance_register(SENSOR_EVENTS, beehive::events::sensors::SENSOR_EVENT_SHT3XDIS_READINGS, MQTTClient::s_sensor_event_handler, this, NULL));
 }
 
@@ -60,6 +66,9 @@ void MQTTClient::handle_mqtt_event(esp_event_base_t event_base, int32_t event_id
     break;
   case MQTT_EVENT_PUBLISHED:
     ESP_LOGD(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
+    // The MQTT_EVENTS are scoped to the client, so
+    // I create this forwarding.
+    beehive::events::mqtt::published();
     break;
   case MQTT_EVENT_DATA:
     ESP_LOGD(TAG, "MQTT_EVENT_DATA");
@@ -93,14 +102,21 @@ void MQTTClient::config_event_handler(esp_event_base_t base, beehive::events::co
       const auto hostname = beehive::events::config::mqtt::hostname(id, event_data);
       if(hostname)
       {
-	ESP_LOGE(TAG, "MQTT_HOST: %s", hostname->c_str());
-	_config.host = hostname->c_str();
+	std::strncpy(_hostname, hostname->c_str(), sizeof(_hostname));
+	ESP_LOGD(TAG, "MQTT_HOST: %s", _hostname);
 	esp_mqtt_set_config(_client, &_config);
       }
     }
     break;
-    // All ignored
   case beehive::events::config::SYSTEM_NAME:
+    std::strncpy(_client_id, beehive::appstate::system_name().c_str(), sizeof(_client_id));
+    ESP_LOGD(TAG, "MQTT_CLIENT_ID: %s", _client_id);
+    // It appears as if this re-setting of the client id does only take effect
+    // after a reboot. I'm ok with this as in normal operation, we'd do that through
+    // deep sleep anyway.
+    esp_mqtt_set_config(_client, &_config);
+    break;
+    // All ignored
   case beehive::events::config::SLEEPTIME:
     break;
   }

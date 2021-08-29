@@ -14,6 +14,7 @@ ESP_EVENT_DEFINE_BASE(CONFIG_EVENTS);
 ESP_EVENT_DEFINE_BASE(SENSOR_EVENTS);
 ESP_EVENT_DEFINE_BASE(BUTTON_EVENTS);
 ESP_EVENT_DEFINE_BASE(SDCARD_EVENTS);
+ESP_EVENT_DEFINE_BASE(BEEHIVE_MQTT_EVENTS);
 
 #ifdef __cplusplus
 }
@@ -35,6 +36,17 @@ struct config_event_name_t
 } // namespace
 namespace beehive::events {
 
+namespace mqtt {
+
+void published()
+{
+  esp_event_post(
+    BEEHIVE_MQTT_EVENTS, PUBLISHED,
+    nullptr, 0, 0);
+}
+
+} // namespace mqtt
+
 namespace buttons {
 
 void register_button_callback(button_events_t e,
@@ -44,7 +56,6 @@ void register_button_callback(button_events_t e,
 }
 
 } // namespace buttons
-
 
 namespace sensors {
 

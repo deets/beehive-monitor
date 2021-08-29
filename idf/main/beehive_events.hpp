@@ -1,5 +1,6 @@
 // Copyright: 2021, Diez B. Roggisch, Berlin, all rights reserved
 #pragma once
+#include "mqtt_client.h"
 #include "pins.hpp"
 
 #include "esp_event.h"
@@ -17,6 +18,7 @@ extern "C" {
   ESP_EVENT_DECLARE_BASE(SENSOR_EVENTS);
   ESP_EVENT_DECLARE_BASE(BUTTON_EVENTS);
   ESP_EVENT_DECLARE_BASE(SDCARD_EVENTS);
+  ESP_EVENT_DECLARE_BASE(BEEHIVE_MQTT_EVENTS);
 
 #ifdef __cplusplus
 }
@@ -34,6 +36,14 @@ enum button_events_t
 
 void register_button_callback(button_events_t,
                               std::function<void(button_events_t)>);
+
+}
+
+namespace mqtt {
+
+enum mqtt_events_t { PUBLISHED };
+
+void published();
 
 }
 
