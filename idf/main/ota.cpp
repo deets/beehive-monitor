@@ -20,7 +20,6 @@ const auto UPDATE_URL_BASE = "https://roggisch.de/beehive/beehive-";
 extern const uint8_t server_cert_pem_start[] asm("_binary_ca_cert_pem_start");
 extern const uint8_t server_cert_pem_end[] asm("_binary_ca_cert_pem_end");
 
-
 void ota_task(void *pvParameter)
 {
   const auto app_desc = esp_ota_get_app_description();
@@ -52,5 +51,10 @@ void ota_task(void *pvParameter)
 
 void start_ota_task()
 {
-  xTaskCreate(&ota_task, "ota_example_task", 8192, NULL, 5, NULL);
+  static auto s_task_created = false;
+  if(!s_task_created)
+  {
+    xTaskCreate(&ota_task, "ota_example_task", 8192, NULL, 5, NULL);
+    s_task_created = true;
+  }
 }

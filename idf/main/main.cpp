@@ -30,18 +30,22 @@ using namespace std::chrono_literals;
 
 namespace {
 
+const int SDCARD_BIT = BIT0;
+bool s_caffeine = false;
 
 void sensor_task(void*)
 {
   Sensors sensors;
+  vTaskDelay(2000 / portTICK_PERIOD_MS);
+
   while(true)
   {
-    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    ESP_LOGI(TAG, "sensors.work()");
     sensors.work();
+    vTaskDelay((std::chrono::seconds(beehive::appstate::sleeptime()) / 1ms) / portTICK_PERIOD_MS);
   }
 }
 
-const int SDCARD_BIT = BIT0;
 
 void sdcard_event_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
@@ -49,9 +53,24 @@ void sdcard_event_handler(void *event_handler_arg, esp_event_base_t event_base, 
   xEventGroupSetBits(event_group, SDCARD_BIT);
 }
 
-void mainloop(bool wait_for_events)
+
+bool stay_awake()
 {
-  if(wait_for_events)
+  const auto mode = beehive::iobuttons::mode_on();
+  ESP_LOGI(TAG, "stay_awake mode: %i, s_caffeine: %i", mode, s_caffeine);
+  return s_caffeine || mode;
+}
+
+void mainloop()
+{
+  if(stay_awake())
+  {
+    while(true)
+    {
+      vTaskDelay(20000 / portTICK_PERIOD_MS);
+    }
+  }
+  else
   {
     auto event_group = xEventGroupCreate();
     ESP_ERROR_CHECK(esp_event_handler_instance_register(
@@ -73,13 +92,6 @@ void mainloop(bool wait_for_events)
     ESP_LOGI(TAG, "Sleeping for %i seconds", beehive::appstate::sleeptime());
     esp_sleep_enable_timer_wakeup(std::chrono::seconds(beehive::appstate::sleeptime()) / 1us);
     esp_deep_sleep_start();
-  }
-  else
-  {
-    while(true)
-    {
-      vTaskDelay(20000 / portTICK_PERIOD_MS);
-    }
   }
 }
 
@@ -107,24 +119,13 @@ void app_main()
   ESP_ERROR_CHECK(esp_event_loop_create_default());
   // must be early because it initialises NVS
   beehive::appstate::init();
-  setup_wifi();
-
-  mqtt::MQTTClient mqtt_client;
-  sdcard::SDCardWriter sdcard_writer;
-  beehive::http::HTTPServer http_server;
-
-  start_mdns_service();
-
-  // it seems if I don't bind this to core 0, the i2c
-  // subsystem fails randomly.
-  xTaskCreatePinnedToCore(sensor_task, "sensor", 8192, NULL, uxTaskPriorityGet(NULL), NULL, 0);
-
   beehive::iobuttons::setup();
 
   beehive::events::buttons::register_button_callback(
     beehive::events::buttons::OTA,
     [](beehive::events::buttons::button_events_t) {
-      if(false && wifi_connected())
+      s_caffeine = true;
+      if(wifi_connected())
       {
 	ESP_LOGI(TAG, "Connected to WIFI, run OTA");
 	start_ota_task();
@@ -144,8 +145,21 @@ void app_main()
     }
     );
 
+  setup_wifi();
+  start_mdns_service();
+  // we first need to setup wifi, because otherwise
+  // MQTT fails due to missing network stack initialisation!
+  mqtt::MQTTClient mqtt_client;
+  sdcard::SDCardWriter sdcard_writer;
+  beehive::http::HTTPServer http_server;
+
   // right before we go into our mainloop
   // we need to broadcast our configured state.
   beehive::appstate::promote_configuration();
-  mainloop(false);
+
+  // it seems if I don't bind this to core 0, the i2c
+  // subsystem fails randomly.
+  xTaskCreatePinnedToCore(sensor_task, "sensor", 8192, NULL, uxTaskPriorityGet(NULL), NULL, 0);
+
+  mainloop();
 }
