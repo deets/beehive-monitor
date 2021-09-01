@@ -6,6 +6,8 @@
 
 #include <mqtt_client.h>
 
+#include <set>
+
 namespace beehive::mqtt {
 
 class MQTTClient
@@ -32,6 +34,8 @@ private:
   char _hostname[200];
 
   size_t _counter;
+
+  std::set<int> _published_messages;
 };
 
 } // namespace beehive::mqtt

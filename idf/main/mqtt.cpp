@@ -9,7 +9,7 @@
 #include <esp_log.h>
 #include <cstring>
 
-//#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
+#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
 
 #define TAG "mqtt"
 
@@ -69,7 +69,12 @@ void MQTTClient::handle_mqtt_event(esp_event_base_t event_base, int32_t event_id
     ESP_LOGD(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
     // The MQTT_EVENTS are scoped to the client, so
     // I create this forwarding.
-    beehive::events::mqtt::published();
+    _published_messages.erase(event->msg_id);
+    if(_published_messages.empty())
+    {
+      ESP_LOGD(TAG, "published messages empty, signalling!");
+      beehive::events::mqtt::published();
+    }
     break;
   case MQTT_EVENT_DATA:
     ESP_LOGD(TAG, "MQTT_EVENT_DATA");
@@ -135,7 +140,13 @@ void MQTTClient::sensor_event_handler(esp_event_base_t base, beehive::events::se
   const auto readings = beehive::events::sensors::receive_readings(id, event_data);
   if(readings)
   {
-    roland::publish(++_counter, *readings, [this](const char *topic, const char *data, int len, int qos, int retain) { publish(topic, data, len, qos, retain);});
+    roland::publish(++_counter, *readings,
+		    [this]
+		    (const char *topic, const char *data, int len, int qos, int retain) {
+		      const auto message_id = publish(topic, data, len, qos, retain);
+		      ESP_LOGD(TAG, "published message %i", message_id);
+		      _published_messages.insert(message_id);
+		    });
   }
 }
 
