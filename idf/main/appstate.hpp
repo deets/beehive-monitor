@@ -9,6 +9,7 @@ namespace beehive::appstate {
 void init();
 void promote_configuration();
 void set_mqtt_host(const std::string &);
+const std::string& mqtt_host();
 
 void set_system_name(const std::string &);
 const std::string& system_name();
