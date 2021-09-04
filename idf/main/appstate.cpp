@@ -56,11 +56,15 @@ struct NVSLoadStore<std::string>
     std::vector<char> buffer;
     size_t length = 0;
     auto res = nvs_get_str(nvs_handle, name, nullptr, &length);
+    ESP_LOGD(TAG, "std::string restore '%s', length: %i", name, length);
     if(res == ESP_OK)
     {
       buffer.resize(length);
       res = nvs_get_str(nvs_handle, name, buffer.data(), &length);
-      *value = std::string(buffer.data(), buffer.size());
+      // We want to skip the trailing 0 as this otherwise is included in
+      // the string twice.
+      *value = std::string(buffer.data(), std::min(strlen(buffer.data()), buffer.size()));
+      ESP_LOGD(TAG, "std::string restore '%s', value: %s", name, value->c_str());
     }
     return res;
   }
