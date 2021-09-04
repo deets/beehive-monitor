@@ -54,6 +54,17 @@ HTTPServer::HTTPServer()
       return j2;
     });
 
+  _server.register_handler(
+    "/configuration", HTTP_GET,
+    [](const json& body) -> json {
+      json j2 = {
+	{"sleeptime", beehive::appstate::sleeptime()},
+	{"system_name", beehive::appstate::system_name()},
+	{"mqtt_hostname", beehive::appstate::mqtt_host()}
+      };
+      return j2;
+    });
+
   _server.start();
 }
 
