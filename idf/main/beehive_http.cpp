@@ -4,9 +4,18 @@
 #include "appstate.hpp"
 #include "beehive_events.hpp"
 
+#include "http.hpp"
 #include "nlohmann/json.hpp"
 
 namespace beehive::http {
+
+namespace {
+
+extern const uint8_t index_html_start[] asm("_binary_index_html_start");
+extern const uint8_t index_html_end[] asm("_binary_index_html_end");
+
+} // namespace
+
 
 using json = nlohmann::json;
 
@@ -14,26 +23,12 @@ HTTPServer::HTTPServer()
 {
   _server.set_cors("*", 600);
   _server.register_handler(
-    "/", HTTP_GET,
-    [](httpd_req_t* req) -> esp_err_t {
-      json j2 = {
-	{"pi", 3.141},
-	{"happy", true},
-	{"name", "Niels"},
-	{"nothing", nullptr},
-	{"answer", {
-	    {"everything", 42}
-	  }},
-	{"list", {1, 0, 2}},
-	{"object", {
-	    {"currency", "USD"},
-	    {"value", 42.99}
-	  }}
-      };
-      const auto s = j2.dump();
-      httpd_resp_send(req, s.c_str(), s.size());
-      return ESP_OK;
-    });
+    "/",
+    const_cast<uint8_t*>(index_html_start),
+    const_cast<uint8_t*>(index_html_end),
+    deets::http::ContentType::text_html
+    );
+
   _server.register_handler(
     "/configuration", HTTP_POST,
     [](const json& body) -> json {
