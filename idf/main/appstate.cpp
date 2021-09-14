@@ -157,4 +157,6 @@ void set_sleeptime(uint32_t sleeptime) {
 
 uint32_t sleeptime() { return s_sleeptime; }
 
+const char *ntp_server() { return "pool.ntp.org"; }
+
 } // namespace beehive::appstate

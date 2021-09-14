@@ -17,4 +17,6 @@ const std::string& system_name();
 void set_sleeptime(uint32_t);
 uint32_t sleeptime();
 
+const char* ntp_server();
+
 }

@@ -18,6 +18,7 @@
 #include <esp_heap_caps.h>
 #include <esp_log.h>
 #include <esp_sleep.h>
+#include <esp_sntp.h>
 #include <mdns.h>
 #include <chrono>
 #include <sstream>
@@ -34,6 +35,7 @@ namespace {
 const int SDCARD_BIT = BIT0;
 const int MQTT_PUBLISHED_BIT = BIT1;
 const auto SLEEP_CONDITION_TIMEOUT = 30s;
+const auto NTP_TIMEOUT = 15;
 
 bool s_caffeine = false;
 
@@ -63,13 +65,43 @@ void mqtt_event_handler(void *event_handler_arg, esp_event_base_t event_base, in
 }
 
 
+void print_time()
+{
+  time_t now;
+  char strftime_buf[64];
+  struct tm timeinfo;
+  time(&now);
+
+  // Set timezone to China Standard Time
+  setenv("TZ", "UTC", 1);
+  tzset();
+  localtime_r(&now, &timeinfo);
+
+  strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+  ESP_LOGI(TAG, "The current date/time in UTC is: %s", strftime_buf);
+  switch(sntp_get_sync_status())
+  {
+  case SNTP_SYNC_STATUS_RESET:
+    ESP_LOGI(TAG, "SNTP_SYNC_STATUS_RESET");
+    break;
+  case SNTP_SYNC_STATUS_COMPLETED:
+    ESP_LOGI(TAG, "SNTP_SYNC_STATUS_COMPLETED");
+    break;
+  case SNTP_SYNC_STATUS_IN_PROGRESS:
+    ESP_LOGI(TAG, "SNTP_SYNC_STATUS_IN_PROGRESS");
+    break;
+  }
+}
+
+
 bool stay_awake()
 {
   const auto mode = beehive::iobuttons::mode_on();
   const auto res = s_caffeine || mode;
+  print_time();
   ESP_LOGI(
     TAG,
-    "stay_awake mode: %s, s_caffeine: %s -> %s",
+    "stay_awake mode: %s, %s -> %s",
     (mode ? "LED is ON" : "LED is OFF"),
     (s_caffeine ? "BOOT has been pressed" : "BOOT has not been pressed"),
     (res ? "we stay awake" : "we go to sleep"));
@@ -117,6 +149,23 @@ void mainloop()
       esp_deep_sleep_start();
     }
   }
+}
+
+void start_ntp_service()
+{
+  ESP_LOGI(TAG, "Acquire time using NTP");
+  sntp_setoperatingmode(SNTP_OPMODE_POLL);
+  sntp_setservername(0, beehive::appstate::ntp_server());
+  sntp_init();
+  for(int i=0; i < NTP_TIMEOUT; ++i)
+  {
+    if(sntp_get_sync_status() == SNTP_SYNC_STATUS_COMPLETED)
+    {
+      return;
+    }
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+  }
+  ESP_LOGE(TAG, "Couldn't obtain NTP date!");
 }
 
 void start_mdns_service()
@@ -171,6 +220,8 @@ void app_main()
 
   setup_wifi();
   start_mdns_service();
+  start_ntp_service();
+
   // we first need to setup wifi, because otherwise
   // MQTT fails due to missing network stack initialisation!
   sdcard::SDCardWriter sdcard_writer;
