@@ -5,10 +5,12 @@
 #include "beehive_events.hpp"
 #include "roland.hpp"
 #include "mqtt_client.h"
+#include "util.hpp"
 
 #include <esp_log.h>
 #include <cstring>
-
+#include <sstream>
+#include <iomanip>
 
 //#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
 
@@ -16,6 +18,43 @@
 
 namespace beehive::mqtt {
 
+namespace {
+
+const auto QOS = 1;
+const auto RETAIN = 0;
+const auto SEPARATOR = ";";
+
+void native_publish(
+  const size_t counter,
+  const std::vector<events::sensors::sht3xdis_value_t> &readings,
+  std::function < void(const char *topic, const char *data, int len, int qos, int retain)> publish
+  )
+{
+  std::stringstream topic;
+  size_t readings_count = 0;
+
+  topic << "beehive/" << beehive::appstate::system_name();
+
+  std::stringstream ss;
+  ss << counter << "," << beehive::util::isoformat() << SEPARATOR;
+
+  for(const auto& entry : readings)
+  {
+    ss << std::hex << std::setw(2) << std::setfill('0') << int(entry.busno);
+    ss << std::hex << std::setw(2) << std::setfill('0') << int(entry.address) << ",";
+    ss << "T" << std::hex << std::setw(4) << std::setfill('0') << entry.raw_temperature << ",";
+    ss << "H" << std::hex << std::setw(4) << std::setfill('0') << entry.raw_humidity;
+    if(++readings_count < readings.size())
+    {
+      ss << SEPARATOR;
+    }
+  }
+  const auto payload = ss.str();
+  const auto topic_ = topic.str();
+  publish(topic_.c_str(), payload.c_str(), payload.size(), QOS, RETAIN);
+}
+
+}
 MQTTClient::MQTTClient(size_t counter)
   : _counter(counter)
 {
@@ -141,13 +180,21 @@ void MQTTClient::sensor_event_handler(esp_event_base_t base, beehive::events::se
   const auto readings = beehive::events::sensors::receive_readings(id, event_data);
   if(readings)
   {
-    roland::publish(++_counter, *readings,
+    roland::publish(_counter, *readings,
 		    [this]
 		    (const char *topic, const char *data, int len, int qos, int retain) {
 		      const auto message_id = publish(topic, data, len, qos, retain);
-		      ESP_LOGD(TAG, "published message %i", message_id);
+		      ESP_LOGD(TAG, "roland published message %i", message_id);
 		      _published_messages.insert(message_id);
 		    });
+    native_publish(++_counter, *readings,
+		    [this]
+		    (const char *topic, const char *data, int len, int qos, int retain) {
+		      const auto message_id = publish(topic, data, len, qos, retain);
+		      ESP_LOGD(TAG, "beehive published message %i", message_id);
+		      _published_messages.insert(message_id);
+		    });
+
   }
 }
 

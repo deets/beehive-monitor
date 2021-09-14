@@ -2,6 +2,7 @@
 #include "sdcard.hpp"
 #include "beehive_events.hpp"
 #include "pins.hpp"
+#include "util.hpp"
 
 #include <dirent.h>
 #include <fcntl.h>
@@ -43,14 +44,6 @@ static const char *FILE_FORMAT_VERSION = "V2,";
 #ifndef SPI_DMA_CHAN
 #define SPI_DMA_CHAN    1
 #endif //SPI_DMA_CHAN
-
-std::string isoformat()
-{
-  std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-  std::stringstream ss;
-  ss << std::put_time( std::localtime( &t ), "%FT%T%z" );
-  return ss.str();
-}
 
 size_t parse_line(size_t current_total_datasets_written,
                   const std::vector<char> &line)
@@ -289,7 +282,7 @@ void SDCardWriter::sensor_event_handler(esp_event_base_t base, beehive::events::
       ESP_LOGD(TAG, "Writing data to the sdcard");
       std::stringstream ss;
 
-      ss << "#" << FILE_FORMAT_VERSION << std::hex << std::setw(8) << std::setfill('0') << ++_total_datasets_written << "," << isoformat() << ",";
+      ss << "#" << FILE_FORMAT_VERSION << std::hex << std::setw(8) << std::setfill('0') << ++_total_datasets_written << "," << beehive::util::isoformat() << ",";
 
       for(const auto& reading : *readings)
       {

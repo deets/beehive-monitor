@@ -13,6 +13,8 @@ set(srcs
   sensors.cpp
   roland.hpp
   roland.cpp
+  util.hpp
+  util.cpp
   sdcard.hpp
   sdcard.cpp
   smartconfig.hpp
