@@ -20,8 +20,9 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <chrono>
 
-//#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
+#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
 #include "esp_log.h"
 
 namespace beehive::sdcard {
@@ -31,8 +32,9 @@ namespace {
 static const char *TAG = "sdcard";
 
 #define MOUNT_POINT "/sdcard"
-static const char* s_mount_point  = "/sdcard";
-static const char *FILE_FORMAT_VERSION = "V1,";
+static const char *s_mount_point = "/sdcard";
+// must have the form "V<number>," - the comma is important!
+static const char *FILE_FORMAT_VERSION = "V2,";
 
 #define FILE_PREFIX "BEE" // must be upper-case
 #define DATASETS_PER_DAY (12 * 24) // every 5 minutes, 24h a day
@@ -41,6 +43,14 @@ static const char *FILE_FORMAT_VERSION = "V1,";
 #ifndef SPI_DMA_CHAN
 #define SPI_DMA_CHAN    1
 #endif //SPI_DMA_CHAN
+
+std::string isoformat()
+{
+  std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+  std::stringstream ss;
+  ss << std::put_time( std::localtime( &t ), "%FT%T%z" );
+  return ss.str();
+}
 
 size_t parse_line(size_t current_total_datasets_written,
                   const std::vector<char> &line)
@@ -279,7 +289,7 @@ void SDCardWriter::sensor_event_handler(esp_event_base_t base, beehive::events::
       ESP_LOGD(TAG, "Writing data to the sdcard");
       std::stringstream ss;
 
-      ss << "#" << FILE_FORMAT_VERSION << std::hex << std::setw(8) << std::setfill('0') << ++_total_datasets_written << ",";
+      ss << "#" << FILE_FORMAT_VERSION << std::hex << std::setw(8) << std::setfill('0') << ++_total_datasets_written << "," << isoformat() << ",";
 
       for(const auto& reading : *readings)
       {
