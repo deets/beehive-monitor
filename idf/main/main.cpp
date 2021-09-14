@@ -44,7 +44,6 @@ void sensor_task(void*)
 
   while(true)
   {
-    ESP_LOGI(TAG, "sensors.work()");
     sensors.work();
     vTaskDelay((std::chrono::seconds(beehive::appstate::sleeptime()) / 1ms) / portTICK_PERIOD_MS);
   }
@@ -79,15 +78,12 @@ bool stay_awake()
 
 void mainloop()
 {
-  if(stay_awake())
+  while(true)
   {
-    while(true)
+    while(stay_awake())
     {
       vTaskDelay(20000 / portTICK_PERIOD_MS);
     }
-  }
-  else
-  {
     auto event_group = xEventGroupCreate();
     // Any SDCard event means either we could successfully
     // write *or* there was an unrecoverable error - so we
@@ -114,10 +110,12 @@ void mainloop()
     {
       ESP_LOGI(TAG, "Timeout woke us up");
     }
-
-    ESP_LOGI(TAG, "Sleeping for %i seconds", beehive::appstate::sleeptime());
-    esp_sleep_enable_timer_wakeup(std::chrono::seconds(beehive::appstate::sleeptime()) / 1us);
-    esp_deep_sleep_start();
+    if(!stay_awake())
+    {
+      ESP_LOGI(TAG, "Sleeping for %i seconds", beehive::appstate::sleeptime());
+      esp_sleep_enable_timer_wakeup(std::chrono::seconds(beehive::appstate::sleeptime()) / 1us);
+      esp_deep_sleep_start();
+    }
   }
 }
 
