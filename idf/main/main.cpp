@@ -68,7 +68,12 @@ bool stay_awake()
 {
   const auto mode = beehive::iobuttons::mode_on();
   const auto res = s_caffeine || mode;
-  ESP_LOGI(TAG, "stay_awake mode: %i, s_caffeine: %i -> %i", mode, s_caffeine, res);
+  ESP_LOGI(
+    TAG,
+    "stay_awake mode: %s, s_caffeine: %s -> %s",
+    (mode ? "LED is ON" : "LED is OFF"),
+    (s_caffeine ? "BOOT has been pressed" : "BOOT has not been pressed"),
+    (res ? "we stay awake" : "we go to sleep"));
   return res;
 }
 
