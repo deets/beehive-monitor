@@ -37,8 +37,8 @@ void fake_sensor_data(std::vector<sht3xdis_value_t>& readings, const std::set<st
 	const auto seconds = double(esp_timer_get_time()) / 1000000.0;
 	const auto s = sin(seconds * HZ);
 	const auto c = cos(seconds * HZ);
-	const auto raw_humidity = uint16_t(30000.0 + 20000.0 * s);
-	const auto raw_temperature = uint16_t(10000.0 + 5000.0 * c);
+	const auto raw_humidity = uint16_t(30000.0 + 20000.0 * s + busno * address);
+	const auto raw_temperature = uint16_t(10000.0 + 5000.0 * c + busno * address);
 	const auto humidity = sht3xdis::SHT3XDIS::raw2humidity(raw_humidity);
 	const auto temperature = sht3xdis::SHT3XDIS::raw2temperature(raw_temperature);
 	readings.push_back(
@@ -49,7 +49,6 @@ void fake_sensor_data(std::vector<sht3xdis_value_t>& readings, const std::set<st
 	    raw_humidity,
 	    raw_temperature
 	  });
-
       }
     }
   }
