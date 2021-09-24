@@ -42,32 +42,12 @@ class Visualisation:
         self._data_q = queue.Queue()
         doc = self._doc = curdoc()
 
-        raw_data = dict(
-            time=[dt.datetime.now()] * SIZE,
-            temperature=[20.0] * SIZE
-        )
-
-        self._raw_source = ColumnDataSource(
-                data=raw_data,
-        )
-        raw_figure = figure(
-            width=600,
-            height=100,
-        )
-        raw_figure.line(
-            x="time",
-            y="temperature",
-            alpha=0.5,
-            source=self._raw_source,
-        )
-
-        children = [raw_figure]
-
-        layout = column(
-            children,
+        self._sources = {}
+        self._layout = column(
+            [],
             sizing_mode="scale_width"
         )
-        doc.add_root(layout)
+        doc.add_root(self._layout)
 
     def _parse_args(self):
         parser = argparse.ArgumentParser()
@@ -106,6 +86,30 @@ class Visualisation:
         self._data_q.put(msg.payload)
         self._doc.add_next_tick_callback(self._process_data)
 
+    def _add_graph(self, id_, timestamp, temperature):
+        raw_data = dict(
+            time=[timestamp],
+            temperature=[temperature]
+        )
+
+        source = ColumnDataSource(
+                data=raw_data,
+        )
+        raw_figure = figure(
+            width=600,
+            height=100,
+        )
+        raw_figure.line(
+            x="time",
+            y="temperature",
+            alpha=0.5,
+            source=source,
+        )
+        children = self._layout.children
+        children.append(raw_figure)
+        self._layout.update(children=children)
+        self._sources[id_] = source
+
     def _process_data(self):
         # For some reason we get multiple callbacks
         # in the mainloop. So instead of relying on
@@ -115,28 +119,21 @@ class Visualisation:
         for _ in range(self._data_q.qsize()):
             data = self._data_q.get()
 
-            temperature = self._raw_source.data['temperature']
-            # slice of oldest value
-            temperature = temperature[1:]
-
-            time = self._raw_source.data['time']
-            # slice of oldest value
-            time = time[1:]
-
             timestamp, sensor_data = process_payload(data)
-            _id, t, h = sensor_data[0]
-            print(timestamp, t)
+            for id_, t, h in sensor_data:
+                print(timestamp, t)
 
-            # append the new readings to the existing array
-            temperature.append(t)
-            temperature = np.array(temperature, dtype=np.single)
-            time.append(timestamp)
-
-            patch = dict(
-                temperature=[(slice(0, len(temperature)), temperature)],
-                time=[(slice(0, len(time)), time)],
-            )
-            self._raw_source.patch(patch)
+                if id_ not in self._sources:
+                    self._add_graph(id_, timestamp, t)
+                else:
+                    source = self._sources[id_]
+                    data = dict(source.data)
+                    if len(data["time"]) >= SIZE:
+                        data["time"] = data["time"][-SIZE:]
+                        data["temperature"] = data["temperature"][-SIZE:]
+                    data["time"].append(timestamp)
+                    data["temperature"].append(t)
+                    source.update(data=data)
 
 
 def main():
