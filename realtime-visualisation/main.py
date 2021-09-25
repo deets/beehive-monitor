@@ -42,9 +42,30 @@ class Visualisation:
         self._data_q = queue.Queue()
         doc = self._doc = curdoc()
 
-        self._sources = {}
+        data = dict(
+            time=[],
+        )
+
+        self._source = ColumnDataSource(
+            data=data,
+        )
+
+        self._temperature_figure = figure(
+            width=600,
+            height=100,
+            y_axis_label="Temperature"
+        )
+
+        self._humidity_figure = figure(
+            width=600,
+            height=100,
+            y_axis_label="Humidity"
+        )
+
+        children = [self._temperature_figure, self._humidity_figure]
+
         self._layout = column(
-            [],
+            children,
             sizing_mode="scale_width"
         )
         doc.add_root(self._layout)
@@ -72,43 +93,31 @@ class Visualisation:
         # manual interface.
         client.loop_forever()
 
-    # The callback for when the client receives a CONNACK response from the server.
     def _on_connect(self, client, userdata, flags, rc):
-        print("Connected with result code "+str(rc))
-
         # Subscribing in on_connect() means that if we lose the connection and
         # reconnect then subscriptions will be renewed.
         client.subscribe("beehive/beehive")
 
-    # The callback for when a PUBLISH message is received from the server.
     def _on_message(self, client, userdata, msg):
-        print(msg.topic, str(msg.payload))
+        #print(msg.topic, str(msg.payload))
         self._data_q.put(msg.payload)
         self._doc.add_next_tick_callback(self._process_data)
 
-    def _add_graph(self, id_, timestamp, temperature):
-        raw_data = dict(
-            time=[timestamp],
-            temperature=[temperature]
-        )
-
-        source = ColumnDataSource(
-                data=raw_data,
-        )
-        raw_figure = figure(
-            width=600,
-            height=100,
-        )
-        raw_figure.line(
+    def _add_graph(self, id_, temperature, humidity, data):
+        data[f"temp-{id_}"] = [temperature] * len(data["time"])
+        data[f"hum-{id_}"] = [humidity] * len(data["time"])
+        self._temperature_figure.line(
             x="time",
-            y="temperature",
+            y=f"temp-{id_}",
             alpha=0.5,
-            source=source,
+            source=self._source,
         )
-        children = self._layout.children
-        children.append(raw_figure)
-        self._layout.update(children=children)
-        self._sources[id_] = source
+        self._humidity_figure.line(
+            x="time",
+            y=f"hum-{id_}",
+            alpha=0.5,
+            source=self._source,
+        )
 
     def _process_data(self):
         # For some reason we get multiple callbacks
@@ -116,24 +125,29 @@ class Visualisation:
         # one callback per line, we gather them
         # and process as many of them as we find.
 
+        source = self._source
+
         for _ in range(self._data_q.qsize()):
-            data = self._data_q.get()
+            incoming_data = self._data_q.get()
 
-            timestamp, sensor_data = process_payload(data)
-            for id_, t, h in sensor_data:
-                print(timestamp, t)
+            timestamp, sensor_data = process_payload(incoming_data)
 
-                if id_ not in self._sources:
-                    self._add_graph(id_, timestamp, t)
-                else:
-                    source = self._sources[id_]
-                    data = dict(source.data)
-                    if len(data["time"]) >= SIZE:
-                        data["time"] = data["time"][-SIZE:]
-                        data["temperature"] = data["temperature"][-SIZE:]
-                    data["time"].append(timestamp)
-                    data["temperature"].append(t)
-                    source.update(data=data)
+            # this is needed to "clean up" the data
+            # as bokeh otherwise complains in the update
+            data = dict(source.data)
+            data["time"].append(timestamp)
+            data["time"] = data["time"][-SIZE:]
+            time_len = len(data["time"])
+
+            for id_, temperature, humidity in sensor_data:
+                if f"temp-{id_}" not in data:
+                    self._add_graph(id_, temperature, humidity, data)
+                data[f"temp-{id_}"].append(temperature)
+                data[f"temp-{id_}"] = data[f"temp-{id_}"][-time_len:]
+                data[f"hum-{id_}"].append(humidity)
+                data[f"hum-{id_}"] = data[f"hum-{id_}"][-time_len:]
+
+            source.update(data=data)
 
 
 def main():
