@@ -71,6 +71,17 @@ class Visualisation:
             sizing_mode="scale_width"
         )
         doc.add_root(self._layout)
+        self._writer = lambda payload: None
+        if opts.output:
+            outf = open(opts.output, "wb")
+
+            def writer(payload):
+                outf.write(payload)
+                if not payload[-1] == b"\n":
+                    outf.write(b"\n")
+                outf.flush()
+
+            self._writer = writer
 
     def _parse_args(self):
         parser = argparse.ArgumentParser()
@@ -103,6 +114,7 @@ class Visualisation:
     def _on_message(self, client, userdata, msg):
         #print(msg.topic, str(msg.payload))
         self._data_q.put(msg.payload)
+        self._writer(msg.payload)
         self._doc.add_next_tick_callback(self._process_data)
 
     def _add_graph(self, id_, temperature, humidity, data):
