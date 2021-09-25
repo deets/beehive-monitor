@@ -53,13 +53,15 @@ class Visualisation:
         self._temperature_figure = figure(
             width=600,
             height=100,
-            y_axis_label="Temperature"
+            y_axis_label="Temperature",
+            x_axis_type="datetime",
         )
 
         self._humidity_figure = figure(
             width=600,
             height=100,
-            y_axis_label="Humidity"
+            y_axis_label="Humidity",
+            x_axis_type="datetime",
         )
 
         children = [self._temperature_figure, self._humidity_figure]
