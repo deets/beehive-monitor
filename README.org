@@ -8,11 +8,11 @@
 ** Progress
 
    - [X] Over the air updates.
-   - [ ] WIFI-Provisioning.
-   - [ ] General configuration.
-   - [ ] Finalize MQTT format.
-   - [ ] Finalize hardware.
-   - [ ] Setup deep sleep mode.
+   - [X] WIFI-Provisioning.
+   - [X] General configuration.
+   - [X] Finalize MQTT format.
+   - [X] Finalize hardware.
+   - [X] Setup deep sleep mode.
    - [ ] HTTP download of SD-card-contents.
-   - [ ] See if an RTC would be a useful addition.
-   - [ ] See if a OLED-display would be a useful addition.
+   - [X] See if an RTC would be a useful addition. (No, I use NTP)
+   - [X] See if a OLED-display would be a useful addition. (I decided not for now)
