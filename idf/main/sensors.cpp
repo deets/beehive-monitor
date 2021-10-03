@@ -11,11 +11,13 @@
 
 #include "sdkconfig.h"
 
-#include <esp_log.h>
 #include <math.h>
 
 #include <set>
 #include <tuple>
+
+//#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
+#include <esp_log.h>
 
 #define TAG "sensors"
 
@@ -23,6 +25,7 @@ namespace {
 
 using namespace beehive::events::sensors;
 
+#ifdef CONFIG_BEEHIVE_FAKE_SENSOR_DATA
 const double HZ = 0.1;
 
 void fake_sensor_data(std::vector<sht3xdis_value_t>& readings, const std::set<std::tuple<uint8_t, uint8_t>>& sensors_seen)
@@ -53,6 +56,9 @@ void fake_sensor_data(std::vector<sht3xdis_value_t>& readings, const std::set<st
     }
   }
 }
+
+#endif // CONFIG_BEEHIVE_FAKE_SENSOR_DATA
+
 
 } // namespace
 
@@ -101,6 +107,9 @@ void Sensors::work()
 	raw_values.humidity,
 	raw_values.temperature
       });
+    #ifdef CONFIG_BEEHIVE_FAKE_SENSOR_DATA
+    sensors_seen.insert({entry.busno, entry.address});
+    #endif
   }
   #ifdef CONFIG_BEEHIVE_FAKE_SENSOR_DATA
   fake_sensor_data(readings, sensors_seen);
