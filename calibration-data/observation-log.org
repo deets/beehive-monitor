@@ -1,0 +1,14 @@
+* Beehive Sensor Calibration Observation Log
+
+** Hot Cup Insulated
+
+   I placed a hot cup into the box and blew the fan.
+
+   Once the temperature peaked I removed the cup, and turned off the
+   fan.
+
+   Then a mishap happened, and I lost all the data leading up to this
+   event - but the data I want to calibrate is the one available.
+
+   The TESTO-values were 97.4%, 24.0C when the chamber was opened at
+   the end.
