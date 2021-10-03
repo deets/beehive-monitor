@@ -7,13 +7,19 @@ import queue
 import argparse
 import datetime as dt
 
-import numpy as np
+import pathlib
 
 from bokeh.models import ColumnDataSource
 from bokeh.plotting import curdoc, figure
-from bokeh.layouts import column, row
-from bokeh.models import FactorRange, Range1d
-from bokeh.models import Select
+from bokeh.layouts import column
+
+
+def raw2humidity(humidity):
+    return humidity * 100 / 65535.0
+
+
+def raw2temperature(temperature):
+    return temperature * 175.0 / 65535.0 - 45.0
 
 
 def process_sensor_payload(sensor_payload):
@@ -31,13 +37,24 @@ def process_payload(payload):
     return timestamp, sensors
 
 
-SIZE = 100
-
-
 class Visualisation:
 
     def __init__(self):
         opts = self._parse_args()
+
+        self._size = opts.size
+
+        if opts.input is None:
+            self._acquisition_task = self._mqtt_task
+        else:
+            self._acquisition_task = lambda: self._acquire_from_file(opts.input)
+
+        self._temperature_converter = lambda x: x
+        self._humidity_converter = lambda x: x
+
+        if opts.convert:
+            self._temperature_converter = raw2temperature
+            self._humidity_converter = raw2humidity
 
         self._data_q = queue.Queue()
         doc = self._doc = curdoc()
@@ -86,10 +103,13 @@ class Visualisation:
     def _parse_args(self):
         parser = argparse.ArgumentParser()
         parser.add_argument("-o", "--output", help="Record data into file")
+        parser.add_argument("-i", "--input", help="Load data from this file instead of MQTT")
+        parser.add_argument("-s", "--size", type=int, default=None, help="The limit of measurements shown.")
+        parser.add_argument("-c", "--convert", action="store_true", default=False, help="Convert acconding to SHT3XDIS datasheet.")
         return parser.parse_args()
 
-    def start_mqtt(self):
-        t = threading.Thread(target=self._mqtt_task)
+    def start_acquisition(self):
+        t = threading.Thread(target=self._acquisition_task)
         t.daemon = True
         t.start()
 
@@ -105,6 +125,14 @@ class Visualisation:
         # Other loop*() functions are available that give a threaded interface and a
         # manual interface.
         client.loop_forever()
+
+    def _acquire_from_file(self, path):
+        with pathlib.Path(path).open("rb") as inf:
+            for line in inf:
+                line = line.strip()
+                if line:
+                    self._data_q.put(line)
+                    self._doc.add_next_tick_callback(self._process_data)
 
     def _on_connect(self, client, userdata, flags, rc):
         # Subscribing in on_connect() means that if we lose the connection and
@@ -150,10 +178,15 @@ class Visualisation:
             # as bokeh otherwise complains in the update
             data = dict(source.data)
             data["time"].append(timestamp)
-            data["time"] = data["time"][-SIZE:]
+
+            if self._size is not None:
+                data["time"] = data["time"][-self._size:]
+
             time_len = len(data["time"])
 
             for id_, temperature, humidity in sensor_data:
+                temperature = self._temperature_converter(temperature)
+                humidity = self._humidity_converter(humidity)
                 if f"temp-{id_}" not in data:
                     self._add_graph(id_, temperature, humidity, data)
                 data[f"temp-{id_}"].append(temperature)
@@ -166,7 +199,7 @@ class Visualisation:
 
 def main():
     visualisation = Visualisation()
-    visualisation.start_mqtt()
+    visualisation.start_acquisition()
 
 
 main()
