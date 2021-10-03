@@ -15,6 +15,8 @@
 
 #include <set>
 #include <tuple>
+#include <map>
+#include <chrono>
 
 //#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
 #include <esp_log.h>
@@ -22,8 +24,12 @@
 #define TAG "sensors"
 
 namespace {
+using namespace std::chrono_literals;
 
 using namespace beehive::events::sensors;
+
+const auto SENSOR_READING_COUNT = 16;
+const auto SENSOR_READING_TIMEOUT = 200ms;
 
 #ifdef CONFIG_BEEHIVE_FAKE_SENSOR_DATA
 const double HZ = 0.1;
@@ -88,17 +94,43 @@ Sensors::~Sensors() {}
 void Sensors::work()
 {
   using namespace beehive::events::sensors;
+  using namespace std::chrono_literals;
+
+  using sensor_id_t = std::tuple<uint8_t, uint8_t>;
 
   std::vector<sht3xdis_value_t> readings;
 
   #ifdef CONFIG_BEEHIVE_FAKE_SENSOR_DATA
-  std::set<std::tuple<uint8_t, uint8_t>> sensors_seen;
+  std::set<sensor_id_t> sensors_seen;
   #endif
+
+  const auto sleeptime_in_ms = SENSOR_READING_TIMEOUT / 1ms;
+  std::map<sensor_id_t, std::tuple<uint32_t, uint32_t>> readings_accus;
+
+  for(auto i=0; i < SENSOR_READING_COUNT; ++i)
+  {
+    for(auto& entry : _sensors)
+    {
+      const auto raw_values = entry.sensor->raw_values();
+      const sensor_id_t id = {entry.busno, entry.address};
+      auto [ temperature, humidity ] = readings_accus[id];
+      temperature += raw_values.temperature;
+      humidity += raw_values.humidity;
+      readings_accus[id] = { temperature, humidity };
+    }
+    vTaskDelay(sleeptime_in_ms / portTICK_PERIOD_MS);
+  }
 
   for(auto& entry : _sensors)
   {
-    const auto raw_values = entry.sensor->raw_values();
-    const auto values = entry.sensor->values();
+    const sensor_id_t id = {entry.busno, entry.address};
+    const auto [ acc_temperature, acc_humidity ] = readings_accus[id];
+
+    const auto raw_values = sht3xdis::RawValues{
+      uint16_t(acc_humidity / SENSOR_READING_COUNT),
+      uint16_t(acc_temperature / SENSOR_READING_COUNT)
+    };
+    const auto values = sht3xdis::Values::from_raw(raw_values);
     readings.push_back(
       {
 	entry.busno, entry.address,
