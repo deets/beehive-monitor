@@ -1,9 +1,11 @@
 * Beehive Monitor
 
+
   This project aims to provide environmental information for a beehive
   design to encourage co-habitation of [[https://en.wikipedia.org/wiki/Chelifer_cancroides][Chelifer cancroides]], the
   house pseudoscorpion, with bees, in hopes of reducing or eliminating
   the impact of the notorious [[https://en.wikipedia.org/wiki/Varroa_destructor][varroa mite]].
+
 
 ** Progress
 
@@ -16,3 +18,22 @@
    - [ ] HTTP download of SD-card-contents.
    - [X] See if an RTC would be a useful addition. (No, I use NTP)
    - [X] See if a OLED-display would be a useful addition. (I decided not for now)
+
+** Column Assignment
+
+   These are the busnumber/i2c-addresses of the 4 sensors
+   per columns.
+
+   |-----------+--------------+---------------|
+   | Sensor ID | Column Place | Column Number |
+   |-----------+--------------+---------------|
+   |      0545 |        Top/1 | One           |
+   |      0544 |            2 | One           |
+   |      0445 |            3 | One           |
+   |      0444 |            4 | One           |
+   |-----------+--------------+---------------|
+   |      0745 |        Top/1 | Two           |
+   |      0744 |            2 | Two           |
+   |      0645 |            3 | Two           |
+   |      0644 |            4 | Two           |
+   |-----------+--------------+---------------|
