@@ -12,3 +12,17 @@
 
    The TESTO-values were 97.4%, 24.0C when the chamber was opened at
    the end.
+
+
+** Hot Bottle Insulated
+
+   As expected, humidity dropped due to the increasing dry
+   temperature.
+
+   At 21:43 CEST I removed the bottle and turned off the fan.
+
+   AT 23:05 CEST the temperature was still quite divergent (between 24C and 24.8C).
+
+   I then opened the box and pressed the measure-button on the TESTO device:
+
+   24C, 88.1%
