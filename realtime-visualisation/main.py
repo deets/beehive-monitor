@@ -14,6 +14,18 @@ from bokeh.plotting import curdoc, figure
 from bokeh.layouts import column
 
 
+def regroup_line(sdcard_data):
+    # the V2 format contains a trailing , because it's easier to write that.
+    sequence, timestamp, *rest = sdcard_data.rstrip(",").split(",")
+    entries = []
+    for index in range(0, len(rest), 4):
+        busno, address, humidity, temperature = rest[index:index + 4]
+        entry = f"{busno}{address},{temperature},{humidity}"
+        entries.append(entry)
+
+    return ";".join([f"{sequence},{timestamp}"] + entries)
+
+
 def raw2humidity(humidity):
     return humidity * 100 / 65535.0
 
@@ -69,14 +81,14 @@ class Visualisation:
 
         self._temperature_figure = figure(
             width=600,
-            height=100,
+            height=200,
             y_axis_label="Temperature",
             x_axis_type="datetime",
         )
 
         self._humidity_figure = figure(
             width=600,
-            height=100,
+            height=200,
             y_axis_label="Humidity",
             x_axis_type="datetime",
         )
@@ -127,12 +139,28 @@ class Visualisation:
         client.loop_forever()
 
     def _acquire_from_file(self, path):
-        with pathlib.Path(path).open("rb") as inf:
-            for line in inf:
+        path = pathlib.Path(path)
+        # Data from the SD-Card itself
+        if path.name.startswith("BEE"):
+            self._acquire_from_sdcard_data(path)
+        else:
+            with path.open("rb") as inf:
+                for line in inf:
+                    line = line.strip()
+                    if line:
+                        self._data_q.put(line)
+                        self._doc.add_next_tick_callback(self._process_data)
+
+    def _acquire_from_sdcard_data(self, path):
+        all_files = sorted(path.parent.glob(path.name))
+        for file_ in all_files:
+            for line in file_.read_text().split("\n"):
                 line = line.strip()
                 if line:
+                    assert line.startswith("#V2,")
+                    line = regroup_line(line[4:]).encode("ascii")
                     self._data_q.put(line)
-                    self._doc.add_next_tick_callback(self._process_data)
+        self._doc.add_next_tick_callback(self._process_data)
 
     def _on_connect(self, client, userdata, flags, rc):
         # Subscribing in on_connect() means that if we lose the connection and
@@ -153,13 +181,18 @@ class Visualisation:
             y=f"temp-{id_}",
             alpha=0.5,
             source=self._source,
+            legend_label=f"{id_}C"
         )
         self._humidity_figure.line(
             x="time",
             y=f"hum-{id_}",
             alpha=0.5,
             source=self._source,
+            legend_label=f"{id_}%"
         )
+
+        for p in [self._temperature_figure, self._humidity_figure]:
+            p.legend.click_policy="hide"
 
     def _process_data(self):
         # For some reason we get multiple callbacks
@@ -171,7 +204,6 @@ class Visualisation:
 
         for _ in range(self._data_q.qsize()):
             incoming_data = self._data_q.get()
-
             timestamp, sensor_data = process_payload(incoming_data)
 
             # this is needed to "clean up" the data
