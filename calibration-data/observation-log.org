@@ -26,3 +26,28 @@
    I then opened the box and pressed the measure-button on the TESTO device:
 
    24C, 88.1%
+
+
+
+** <2021-10-11 Mo> Hot Bottle Insulated
+
+   I placed a 500ml hot water bottle into the box.
+
+   The measurement period was 10s.
+
+   I removed the bottle and turned off the fan at <2021-10-11 Mo 16:43>
+
+
+   I then conducted periodic measurements with Testo equipment.
+
+   |-------+-------------+----------|
+   |  Time | Temperature | Humidity |
+   |-------+-------------+----------|
+   | 16:50 |        32.3 |     28.5 |
+   | 17:00 |        28.2 |     34.6 |
+   | 17:10 |        26.2 |     38.1 |
+   | 17:23 |        24.8 |     40.5 |
+   | 17:30 |        24.3 |     41.3 |
+   | 17:41 |        23.8 |     42.1 |
+   | 17:50 |        23.6 |     42.4 |
+   |-------+-------------+----------|
