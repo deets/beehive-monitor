@@ -9,6 +9,7 @@ pandas = "*"
 bottle = "*"
 paho-mqtt = "*"
 bokeh = "*"
+scipy = "*"
 
 [dev-packages]
 

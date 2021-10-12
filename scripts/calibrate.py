@@ -4,10 +4,11 @@ import argparse
 import datetime as dt
 from collections import defaultdict
 
-from bokeh.models import ColumnDataSource
-from bokeh.plotting import curdoc, figure
+from bokeh.plotting import figure
 from bokeh.layouts import column, row
+from bokeh.models.annotations import Label
 from bokeh.io import show
+import scipy.stats
 
 WIDTH, HEIGHT = 800, 800
 TOOLS = "pan,wheel_zoom,box_zoom,reset,hover"
@@ -94,6 +95,114 @@ def load_testo(path, from_, to):
             ]
 
 
+def calibrate(current, reference, figure):
+    r = scipy.stats.linregress(
+        x=current,
+        y=reference,
+        alternative='two-sided'
+    )
+    a, b = current[0], current[-1]
+    ca, cb = (
+        a * r.slope + r.intercept,
+        b * r.slope + r.intercept,
+    )
+    figure.line(
+        x=[a, b],
+        y=[ca, cb],
+        color="red",
+    )
+
+    rps = Label(
+        x=min(current),
+        y=(max(reference) - min(reference)) * .8 + min(reference),
+        x_units="data",
+        y_units="data",
+        text=f"slope={r.slope}\nintercept={r.intercept}\n"
+             f"rvalue={r.rvalue}\npvalue={r.pvalue}\n"
+             f"stderr={r.stderr}\nintercept_stderr={r.intercept_stderr}",
+        render_mode='css',
+        border_line_color='black', border_line_alpha=1.0,
+        background_fill_color='white',
+        background_fill_alpha=1.0
+    )
+    figure.add_layout(rps)
+
+
+def compute(data, id_, temp_reference, hum_reference):
+    temp_current = [t for _ts, t, _h in data[id_]]
+    hum_current = [h for _ts, _t, h in data[id_]]
+
+    temperature_figure = figure(
+        width=WIDTH,
+        height=HEIGHT,
+        x_axis_label=f"Sensor {id_}",
+        y_axis_label="Reference",
+        tools=TOOLS,
+    )
+    temperature_figure.line(
+        y=temp_reference,
+        x=temp_current,
+    )
+    humidity_figure = figure(
+        width=WIDTH,
+        height=HEIGHT,
+        x_axis_label=f"Sensor {id_}",
+        y_axis_label="Reference",
+        tools=TOOLS,
+    )
+    humidity_figure.line(
+        y=hum_reference,
+        x=hum_current,
+    )
+
+    calibrate(temp_current, temp_reference, temperature_figure)
+    calibrate(hum_current, hum_reference, humidity_figure)
+
+    return temperature_figure, humidity_figure
+
+
+def pair(ts_testo, reference, ts_reference):
+    res = []
+    h = list(zip(ts_reference, reference))
+    for ts_testo in ts_testo:
+        _ts, reference_v = min((abs(ts_testo - ts), v) for ts, v in h)
+        res.append(reference_v)
+    return res
+
+
+def compute_testo(testo_data, temp_reference, hum_reference, ts_reference):
+    ts_testo, temp_testo, hum_testo = zip(*testo_data)
+    temp_paired = pair(ts_testo, temp_reference, ts_reference)
+    hum_paired = pair(ts_testo, hum_reference, ts_reference)
+
+    testo_temperature = figure(
+        width=WIDTH,
+        height=HEIGHT,
+        y_axis_label="Testo",
+        x_axis_label="Temperature",
+        tools=TOOLS,
+        )
+    testo_temperature.line(
+        y=temp_testo,
+        x=temp_paired,
+    )
+    testo_humidity = figure(
+        width=WIDTH,
+        height=HEIGHT,
+        y_axis_label="Testo",
+        x_axis_label="Humidity",
+        tools=TOOLS,
+        )
+    testo_humidity.line(
+        y=hum_testo,
+        x=hum_paired,
+    )
+    calibrate(temp_paired, temp_testo, testo_temperature)
+    calibrate(hum_paired, hum_testo, testo_humidity)
+
+    return testo_temperature, testo_humidity
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--testo", help="Testo Information")
@@ -131,66 +240,24 @@ def main():
     row_figures = []
 
     if opts.testo:
-        ts_testo, temp_testo, hum_testo = zip(*load_testo(opts.testo, opts.from_, opts.to))
-        testo_temperature = figure(
-            width=WIDTH,
-            height=HEIGHT,
-            y_axis_label=f"Temperature {reference_id}",
-            x_axis_label="Time",
-            tools=TOOLS,
-            )
-        testo_temperature.line(
-            x=ts_reference,
-            y=temp_reference,
-        )
-        testo_temperature.scatter(
-            x=ts_testo,
-            y=temp_testo,
-        )
-        testo_humidity = figure(
-            width=WIDTH,
-            height=HEIGHT,
-            y_axis_label=f"Humidity {reference_id}",
-            x_axis_label="Time",
-            tools=TOOLS,
-            )
-        testo_humidity.line(
-            x=ts_reference,
-            y=hum_reference,
-        )
-        testo_humidity.scatter(
-            x=ts_testo,
-            y=hum_testo,
+        testo_data = load_testo(opts.testo, opts.from_, opts.to)
+        testo_temperature, testo_humidity = compute_testo(
+            testo_data,
+            temp_reference,
+            hum_reference,
+            ts_reference,
         )
         row_figures.append(row(testo_temperature, testo_humidity))
 
     for id_, values in data.items():
         if id_ == reference_id:
             continue
-        temp_y = [t for _ts, t, _h in data[id_]]
-        hum_y = [h for _ts, _t, h in data[id_]]
 
-        temperature_figure = figure(
-            width=WIDTH,
-            height=HEIGHT,
-            y_axis_label=f"Sensor {id_}",
-            x_axis_label="Reference",
-            tools=TOOLS,
-        )
-        temperature_figure.line(
-            x=temp_reference,
-            y=temp_y,
-        )
-        humidity_figure = figure(
-            width=WIDTH,
-            height=HEIGHT,
-            y_axis_label=f"Sensor {id_}",
-            x_axis_label="Reference",
-            tools=TOOLS,
-        )
-        humidity_figure.line(
-            x=hum_reference,
-            y=hum_y,
+        temperature_figure, humidity_figure = compute(
+            data,
+            id_,
+            temp_reference,
+            hum_reference,
         )
         row_figures.append(row(temperature_figure, humidity_figure))
 
