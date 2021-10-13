@@ -19,6 +19,34 @@
    - [X] See if an RTC would be a useful addition. (No, I use NTP)
    - [X] See if a OLED-display would be a useful addition. (I decided not for now)
 
+
+** Create a Release
+
+   To create a release, determine the version to use and set it to an
+   environment variable VERSION.
+
+   *ATTENTION*: make sure you are on a clean repository! Check with =git describe --dirty=!
+
+   Then execute the following commands:
+
+   #+begin_src bash
+     git tag -am "$VERSION" "$VERSION"
+     idf.py clean
+     idf.py build
+     idf.py flash
+   #+end_src
+
+   Check that the App version in the startup messages is as expected.
+
+   Then do
+
+   #+begin_src bash
+     mkdir "releases/$VERSION"
+     ./copy-release.sh "releases/$VERSION"
+   #+end_src
+
+   Commit the changes.
+
 ** Column Assignment
 
    These are the busnumber/i2c-addresses of the 4 sensors
