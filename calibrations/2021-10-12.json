@@ -1,0 +1,91 @@
+{
+    "__meta__": {
+        "data": "calibration-data/2021-10-12-hot-bottle-insulated.data",
+        "testo": "calibration-data/2021-10-12-testo-values.csv",
+        "from": "2021-10-12T10:00:15",
+        "to": "2021-10-12T10:56:12"
+    },
+    "reference_id": "0444",
+    "testo-calibration": {
+        "temperature": {
+            "slope": 0.8726504271720088,
+            "intercept": 3.007942931474741
+        },
+        "humidity": {
+            "slope": 0.8856252789324542,
+            "intercept": 2.3190384570808646
+        }
+    },
+    "calibrations": {
+        "0445": {
+            "temperature": {
+                "slope": 1.0493563332852511,
+                "intercept": -1.2213746396542788
+            },
+            "humidity": {
+                "slope": 1.0516170902681594,
+                "intercept": -1.413019470072122
+            }
+        },
+        "0544": {
+            "temperature": {
+                "slope": 1.0656565476942224,
+                "intercept": -1.6574887676256473
+            },
+            "humidity": {
+                "slope": 1.1385676490632652,
+                "intercept": -1.6764178345948935
+            }
+        },
+        "0545": {
+            "temperature": {
+                "slope": 1.1268895224493585,
+                "intercept": -3.233209237510909
+            },
+            "humidity": {
+                "slope": 1.1592512334955336,
+                "intercept": -6.082814476920362
+            }
+        },
+        "0644": {
+            "temperature": {
+                "slope": 1.0613448046775709,
+                "intercept": -1.6005668530478872
+            },
+            "humidity": {
+                "slope": 1.0733784408551534,
+                "intercept": -3.254436485254999
+            }
+        },
+        "0645": {
+            "temperature": {
+                "slope": 1.0768004931925514,
+                "intercept": -2.0451451532696296
+            },
+            "humidity": {
+                "slope": 1.0835368160535042,
+                "intercept": -3.5138253013942915
+            }
+        },
+        "0744": {
+            "temperature": {
+                "slope": 1.0499060496924664,
+                "intercept": -1.2069629186210769
+            },
+            "humidity": {
+                "slope": 1.1317556410193905,
+                "intercept": -0.30919405757775564
+            }
+        },
+        "0745": {
+            "temperature": {
+                "slope": 1.0672759339282183,
+                "intercept": -1.6388530226615607
+            },
+            "humidity": {
+                "slope": 1.0909703348541382,
+                "intercept": -4.479598258619369
+            }
+        }
+    }
+}

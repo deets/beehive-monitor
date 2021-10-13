@@ -2,6 +2,7 @@
 import pathlib
 import argparse
 import datetime as dt
+import json
 from collections import defaultdict
 
 from bokeh.plotting import figure
@@ -126,6 +127,7 @@ def calibrate(current, reference, figure):
         background_fill_alpha=1.0
     )
     figure.add_layout(rps)
+    return dict(slope=r.slope, intercept=r.intercept)
 
 
 def compute(data, id_, temp_reference, hum_reference):
@@ -155,10 +157,12 @@ def compute(data, id_, temp_reference, hum_reference):
         x=hum_current,
     )
 
-    calibrate(temp_current, temp_reference, temperature_figure)
-    calibrate(hum_current, hum_reference, humidity_figure)
+    calibration = dict(
+        temperature=calibrate(temp_current, temp_reference, temperature_figure),
+        humidity=calibrate(hum_current, hum_reference, humidity_figure)
+    )
 
-    return temperature_figure, humidity_figure
+    return calibration, temperature_figure, humidity_figure
 
 
 def pair(ts_testo, reference, ts_reference):
@@ -197,10 +201,23 @@ def compute_testo(testo_data, temp_reference, hum_reference, ts_reference):
         y=hum_testo,
         x=hum_paired,
     )
-    calibrate(temp_paired, temp_testo, testo_temperature)
-    calibrate(hum_paired, hum_testo, testo_humidity)
+    calibration = dict(
+        temperature=calibrate(temp_paired, temp_testo, testo_temperature),
+        humidity=calibrate(hum_paired, hum_testo, testo_humidity),
+    )
+    return calibration, testo_temperature, testo_humidity
 
-    return testo_temperature, testo_humidity
+
+def make_meta(opts):
+    meta = dict(data=opts.data)
+    if opts.testo:
+        meta["testo"] = opts.testo
+    if opts.from_:
+        meta["from"] = opts.from_.isoformat()
+    if opts.to:
+        meta["to"] = opts.to.isoformat()
+
+    return meta
 
 
 def main():
@@ -235,30 +252,38 @@ def main():
     reference_id = min(data.keys()) if opts.reference_id is None \
         else opts.reference_id
 
+    calibration = dict(
+        __meta__= make_meta(opts),
+        reference_id=reference_id,
+        )
+
     ts_reference, temp_reference, hum_reference = zip(*data[reference_id])
 
     row_figures = []
 
     if opts.testo:
         testo_data = load_testo(opts.testo, opts.from_, opts.to)
-        testo_temperature, testo_humidity = compute_testo(
-            testo_data,
-            temp_reference,
-            hum_reference,
-            ts_reference,
-        )
+        calibration["testo-calibration"], testo_temperature, testo_humidity = \
+            compute_testo(
+                testo_data,
+                temp_reference,
+                hum_reference,
+                ts_reference,
+            )
         row_figures.append(row(testo_temperature, testo_humidity))
 
+    calibration["calibrations"] = sensor_calibrations = {}
     for id_, values in data.items():
         if id_ == reference_id:
             continue
 
-        temperature_figure, humidity_figure = compute(
-            data,
-            id_,
-            temp_reference,
-            hum_reference,
-        )
+        sensor_calibrations[id_], temperature_figure, humidity_figure = \
+            compute(
+                data,
+                id_,
+                temp_reference,
+                hum_reference,
+            )
         row_figures.append(row(temperature_figure, humidity_figure))
 
     layout = column(
@@ -266,6 +291,7 @@ def main():
         sizing_mode="scale_width"
     )
     show(layout)
+    print(json.dumps(calibration, indent=4))
 
 
 if __name__ == '__main__':

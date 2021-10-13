@@ -54,6 +54,8 @@ class Visualisation:
     def __init__(self):
         opts = self._parse_args()
 
+        self._topic = opts.topic
+
         self._size = opts.size
 
         if opts.input is None:
@@ -118,6 +120,7 @@ class Visualisation:
         parser.add_argument("-i", "--input", help="Load data from this file instead of MQTT")
         parser.add_argument("-s", "--size", type=int, default=None, help="The limit of measurements shown.")
         parser.add_argument("-c", "--convert", action="store_true", default=False, help="Convert acconding to SHT3XDIS datasheet.")
+        parser.add_argument("--topic", default="beehive/beehive")
         return parser.parse_args()
 
     def start_acquisition(self):
@@ -165,7 +168,7 @@ class Visualisation:
     def _on_connect(self, client, userdata, flags, rc):
         # Subscribing in on_connect() means that if we lose the connection and
         # reconnect then subscriptions will be renewed.
-        client.subscribe("beehive/beehive")
+        client.subscribe(self._topic)
 
     def _on_message(self, client, userdata, msg):
         #print(msg.topic, str(msg.payload))
