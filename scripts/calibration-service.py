@@ -9,7 +9,7 @@ import paho.mqtt.client as mqtt
 from dataclasses import dataclass
 
 PREFIX = "beehive"
-ROLAND_TOPIC = "B-values"
+ROLAND_TOPIC = "B-value"
 
 # This suffix is appended to the system name to indicate
 # the values have been calibrated

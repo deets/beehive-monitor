@@ -180,13 +180,6 @@ void MQTTClient::sensor_event_handler(esp_event_base_t base, beehive::events::se
   const auto readings = beehive::events::sensors::receive_readings(id, event_data);
   if(readings)
   {
-    roland::publish(_counter, *readings,
-		    [this]
-		    (const char *topic, const char *data, int len, int qos, int retain) {
-		      const auto message_id = publish(topic, data, len, qos, retain);
-		      ESP_LOGD(TAG, "roland published message %i", message_id);
-		      _published_messages.insert(message_id);
-		    });
     native_publish(++_counter, *readings,
 		    [this]
 		    (const char *topic, const char *data, int len, int qos, int retain) {
@@ -195,6 +188,13 @@ void MQTTClient::sensor_event_handler(esp_event_base_t base, beehive::events::se
 		      _published_messages.insert(message_id);
 		    });
 
+    roland::publish(_counter, *readings,
+		    [this]
+		    (const char *topic, const char *data, int len, int qos, int retain) {
+		      const auto message_id = publish(topic, data, len, qos, retain);
+		      ESP_LOGD(TAG, "roland published message %i", message_id);
+		      _published_messages.insert(message_id);
+		    });
   }
 }
 
