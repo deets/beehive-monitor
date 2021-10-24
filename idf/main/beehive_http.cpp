@@ -19,7 +19,8 @@ extern const uint8_t index_html_end[] asm("_binary_index_html_end");
 
 using json = nlohmann::json;
 
-HTTPServer::HTTPServer()
+HTTPServer::HTTPServer(std::function<size_t()> file_count)
+  : _file_count(file_count)
 {
   _server.set_cors("*", 600);
   _server.register_handler(
@@ -61,6 +62,15 @@ HTTPServer::HTTPServer()
 	{"sleeptime", beehive::appstate::sleeptime()},
 	{"system_name", beehive::appstate::system_name()},
 	{"mqtt_hostname", beehive::appstate::mqtt_host()}
+      };
+      return j2;
+    });
+
+  _server.register_handler(
+    "/status", HTTP_GET,
+    [this](const json& body) -> json {
+      json j2 = {
+	{"file-count", _file_count() }
       };
       return j2;
     });

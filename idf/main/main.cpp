@@ -227,7 +227,7 @@ void app_main()
   sdcard::SDCardWriter sdcard_writer;
   mqtt::MQTTClient mqtt_client(sdcard_writer.total_datasets_written());
 
-  beehive::http::HTTPServer http_server;
+  beehive::http::HTTPServer http_server([&sdcard_writer]() { return sdcard_writer.file_count();});
 
   // right before we go into our mainloop
   // we need to broadcast our configured state.

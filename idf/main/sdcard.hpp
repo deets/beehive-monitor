@@ -16,7 +16,7 @@ public:
   ~SDCardWriter();
 
   size_t total_datasets_written() const { return _total_datasets_written; }
-
+  size_t file_count() const { return _filename_index; }
 private:
 
   static void s_sensor_event_handler(void *handler_args, esp_event_base_t base, int32_t id, void *event_data);
