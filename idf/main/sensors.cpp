@@ -38,7 +38,7 @@ void fake_sensor_data(std::vector<sht3xdis_value_t>& readings, const std::set<st
 {
   for(const auto busno : { 4, 5, 6, 7 })
   {
-    for(const auto address : { 44, 45 })
+    for(const auto address : { 0x44, 0x45 })
     {
       const auto id = std::make_tuple(busno, address);
       if(sensors_seen.count(id) == 0)
@@ -47,7 +47,7 @@ void fake_sensor_data(std::vector<sht3xdis_value_t>& readings, const std::set<st
 	const auto s = sin(seconds * HZ);
 	const auto c = cos(seconds * HZ);
 	const auto raw_humidity = uint16_t(30000.0 + 20000.0 * s + busno * address);
-	const auto raw_temperature = uint16_t(10000.0 + 5000.0 * c + busno * address);
+	const auto raw_temperature = uint16_t(30000.0 + 5000.0 * c + busno * address);
 	const auto humidity = sht3xdis::SHT3XDIS::raw2humidity(raw_humidity);
 	const auto temperature = sht3xdis::SHT3XDIS::raw2temperature(raw_temperature);
 	readings.push_back(
