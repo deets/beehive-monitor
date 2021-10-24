@@ -15,25 +15,6 @@ ROLAND_TOPIC = "B-value"
 # the values have been calibrated
 SUFFIX = "calibrated"
 
-# Change this mapping to alias the names of the columns
-# as well as the sensor aliases
-COLUMN_MAPPING = dict(
-    # Column one
-    klima=[
-        ("0545", "oben"),
-        ("0544", "mitte-oben"),
-        ("0445", "mitte-unten"),
-        ("0444", "unten")
-    ],
-    # Column two
-    kontrolle=[
-        ("0745", "oben"),
-        ("0744", "mitte-oben"),
-        ("0645", "mitte-unten"),
-        ("0644", "unten"),
-    ],
-)
-
 
 def IDENTITY(x):
     return x
@@ -79,16 +60,14 @@ def process_payload(payload):
     return sequence, timestamp, sensors
 
 
-def produce_roland_messages(name, cvs, sequence):
+def produce_roland_message(name, cvs, sequence):
     res = []
-    for column_name, ids in COLUMN_MAPPING.items():
-        system_name = f"{name}-{column_name}-{SUFFIX}"
-        values = [
-            f"{alias},{cvs[id_].temperature},{cvs[id_].humidity}"
-            for id_, alias in ids
-        ]
-        payload = ":".join([f"{system_name},{sequence}"] + values)
-        res.append((ROLAND_TOPIC, payload))
+    values = [
+        f"{id_},{values.temperature},{values.humidity}"
+        for id_, values in sorted(cvs.items())
+    ]
+    payload = ":".join([f"{name}-{SUFFIX},{sequence}"] + values)
+    res.append((ROLAND_TOPIC, payload))
     return res
 
 
@@ -131,7 +110,7 @@ def generate_calibrated_messages(name, payload, calibrations):
     for id_, values in sensor_values.items():
         cvs[id_] = calibrations[id_](values)
 
-    messages = produce_roland_messages(name, cvs, sequence)
+    messages = produce_roland_message(name, cvs, sequence)
     messages.append(produce_calibrated_native_message(name, cvs, timestamp, sequence))
 
     return messages
