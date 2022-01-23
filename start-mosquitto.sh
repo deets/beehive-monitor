@@ -1,2 +1,2 @@
 #!/bin/bash
-/snap/mosquitto/628/usr/sbin/mosquitto -c mosquitto.conf -v
+/snap/mosquitto/current/usr/sbin/mosquitto -c mosquitto.conf -v
