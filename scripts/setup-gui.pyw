@@ -33,9 +33,11 @@ class App:
         tk.Button(self._lower, text="Load", command=self._load).grid(
             row=row + 1, column=0
         )
-        tk.Button(self._lower, text="Save", command=self._save).grid(
+        self._save_button = tk.Button(self._lower, text="Save", command=self._save)
+        self._save_button.grid(
             row=row + 1, column=1
         )
+        self._loaded = False
 
         self._last_config = None
         self._enable(False)
@@ -78,11 +80,16 @@ class App:
         state = "normal" if enable else "disabled"
         for child in self._lower.winfo_children():
             child.configure(state=state)
+        self._save_button.configure(
+            state="normal" if enable and self._loaded else "disabled"
+        )
 
     def _load(self):
         if self._last_config is not None:
             for name, value in self._last_config.items():
                 self._configuration[name].set(value)
+        self._loaded = True
+        self._enable(True)
 
     def _save(self):
         data = {
