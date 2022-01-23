@@ -25,7 +25,14 @@
    To create a release, determine the version to use and set it to an
    environment variable VERSION.
 
-   *ATTENTION*: make sure you are on a clean repository! Check with =git describe --dirty=!
+   *ATTENTION*: the version should look like vX.Y - don't forget the v!
+
+   *ATTENTION*: make sure you are on a clean repository! Check with
+
+   #+begin_src
+   git describe --dirty
+   #+end_src
+
 
    Then execute the following commands:
 
@@ -46,6 +53,12 @@
    #+end_src
 
    Commit the changes.
+
+   Push the tags
+
+   #+begin_src bash
+   git push --tags
+   #+end_src
 
 ** Column Assignment
 
