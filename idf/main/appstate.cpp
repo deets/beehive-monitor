@@ -3,6 +3,7 @@
 #include "appstate.hpp"
 #include "beehive_events.hpp"
 #include "esp_err.h"
+#include <esp_ota_ops.h>
 
 #include <nvs_flash.h>
 #define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
@@ -158,5 +159,12 @@ void set_sleeptime(uint32_t sleeptime) {
 uint32_t sleeptime() { return s_sleeptime; }
 
 const char *ntp_server() { return "pool.ntp.org"; }
+
+std::string version()
+{
+  const auto app_desc = esp_ota_get_app_description();
+  std::stringstream url_stream;
+  return app_desc->version;
+}
 
 } // namespace beehive::appstate

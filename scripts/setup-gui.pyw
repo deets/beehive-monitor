@@ -23,13 +23,19 @@ class App:
         self._lower.pack(side=tk.TOP)
 
         self._configuration = dict(
-            mqtt_hostname=tk.StringVar(),
-            sleeptime=tk.IntVar(),
-            system_name=tk.StringVar(),
+            app_version=(False, tk.StringVar()),
+            mqtt_hostname=(True, tk.StringVar()),
+            sleeptime=(True, tk.IntVar()),
+            system_name=(True, tk.StringVar()),
         )
-        for row, (name, var) in enumerate(self._configuration.items()):
+        for row, (name, (editable, var)) in enumerate(self._configuration.items()):
             tk.Label(self._lower, text=f"{name}:").grid(row=row, column=0)
-            tk.Entry(self._lower, textvariable=var).grid(row=row, column=1)
+            if editable:
+                control = tk.Entry(self._lower, textvariable=var)
+            else:
+                control = tk.Label(self._lower, textvariable=var)
+            control.grid(row=row, column=1)
+
         tk.Button(self._lower, text="Load", command=self._load).grid(
             row=row + 1, column=0
         )
@@ -87,14 +93,14 @@ class App:
     def _load(self):
         if self._last_config is not None:
             for name, value in self._last_config.items():
-                self._configuration[name].set(value)
+                self._configuration[name][1].set(value)
         self._loaded = True
         self._enable(True)
 
     def _save(self):
         data = {
             name : var.get()
-            for name, var in self._configuration.items()
+            for name, (_, var) in self._configuration.items()
         }
         req = urllib.request.Request(self._url)
         req.add_header("Content-Type", "application/json")

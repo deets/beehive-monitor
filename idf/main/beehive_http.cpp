@@ -61,6 +61,7 @@ HTTPServer::HTTPServer(std::function<size_t()> file_count)
       json j2 = {
 	{"sleeptime", beehive::appstate::sleeptime()},
 	{"system_name", beehive::appstate::system_name()},
+	{"app_version", beehive::appstate::version()},
 	{"mqtt_hostname", beehive::appstate::mqtt_host()}
       };
       return j2;

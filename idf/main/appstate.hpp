@@ -19,4 +19,6 @@ uint32_t sleeptime();
 
 const char* ntp_server();
 
+std::string version();
+
 }
