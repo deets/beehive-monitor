@@ -26,7 +26,10 @@ void publish_one_message(
   std::stringstream ss;
   size_t readings_count = 0;
 
-  ss << beehive::appstate::system_name() << column_suffix << "," << counter << ":";
+  time_t now;
+  time(&now);
+
+  ss << beehive::appstate::system_name() << column_suffix << "," << counter << "," << now << ":";
 
   for(const auto& entry : readings)
   {
