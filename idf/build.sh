@@ -1,3 +1,3 @@
 #!/bin/bash
 . ~esp/v4.2/export.sh
-idf.py build
+idf.py build -DTTGO:BOOL=ON
