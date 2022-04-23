@@ -1,4 +1,5 @@
 #include "freertos/projdefs.h"
+#include "i2c.hh"
 #include "io-buttons.hpp"
 #include "wifi.hh"
 #include "mqtt.hpp"
@@ -39,9 +40,10 @@ const auto NTP_TIMEOUT = 15;
 
 bool s_caffeine = false;
 
-void sensor_task(void*)
+void sensor_task(void* user_pointer)
 {
-  Sensors sensors;
+  I2CHost* bus = static_cast<I2CHost*>(user_pointer);
+  Sensors sensors(*bus);
   vTaskDelay(2000 / portTICK_PERIOD_MS);
 
   while(true)
@@ -233,9 +235,10 @@ void app_main()
   // we need to broadcast our configured state.
   beehive::appstate::promote_configuration();
 
+  I2CHost i2c_bus{0, SDA, SCL};
   // it seems if I don't bind this to core 0, the i2c
   // subsystem fails randomly.
-  xTaskCreatePinnedToCore(sensor_task, "sensor", 8192, NULL, uxTaskPriorityGet(NULL), NULL, 0);
+  xTaskCreatePinnedToCore(sensor_task, "sensor", 8192, &i2c_bus, uxTaskPriorityGet(NULL), NULL, 0);
 
   mainloop();
 }

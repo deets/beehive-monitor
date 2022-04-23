@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "i2c.hh"
+
 #include <memory>
 #include <vector>
 
@@ -22,14 +24,14 @@ class Sensors
   };
 
 public:
-  Sensors();
+  Sensors(I2CHost& bus);
   ~Sensors();
 
   void work();
 
 private:
 
-  std::unique_ptr<I2C> _bus;
+  I2C& _bus;
   std::unique_ptr<TCA9548A> _mux;
   std::vector<sensor_t> _sensors;
 };

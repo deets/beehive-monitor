@@ -18,7 +18,7 @@
 #include <map>
 #include <chrono>
 
-//#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
+#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
 #include <esp_log.h>
 
 #define TAG "sensors"
@@ -70,9 +70,9 @@ void fake_sensor_data(std::vector<sht3xdis_value_t>& readings, const std::set<st
 
 
 
-Sensors::Sensors()
-  : _bus(std::unique_ptr<I2C>(new I2CHost{0, SDA, SCL}))
-  , _mux(std::unique_ptr<TCA9548A>(new TCA9548A{*_bus}))
+Sensors::Sensors(I2CHost& bus)
+  : _bus(bus)
+  , _mux(std::unique_ptr<TCA9548A>(new TCA9548A{_bus}))
 {
   for(uint8_t busno=0; busno < 8; ++busno)
   {
