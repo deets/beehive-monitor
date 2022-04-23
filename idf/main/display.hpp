@@ -1,4 +1,8 @@
+#include "font.h"
+
 #include "i2c.hh"
+
+
 #include <memory>
 #include <vector>
 
@@ -9,6 +13,11 @@ class Display {
 public:
   Display(I2CHost&);
   ~Display();
+
+  void update();
+  void font_render(const font_info_t& font, const char*, int x, int y);
+  int font_text_width(const font_info_t& font, const char*);
+  void hline(int x, int x2, int y);
 
 private:
   static uint8_t s_u8g2_esp32_i2c_byte_cb(u8x8_struct *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);

@@ -23,6 +23,7 @@
 #include <esp_sntp.h>
 #include <mdns.h>
 #include <chrono>
+#include <atomic>
 #include <sstream>
 
 extern "C" void app_main();
@@ -188,10 +189,33 @@ void start_mdns_service()
     mdns_service_instance_name_set("_http", "_tcp", ss.str().c_str());
 }
 
+std::atomic<bool> s_logging_callback_set;
+std::function<void(const char *, va_list args)> s_logging_callback;
+
+int beehive_log_override(const char * format, va_list args)
+{
+  // produce serial output as normal
+  int res = vprintf(format, args);
+  if(s_logging_callback_set)
+  {
+    s_logging_callback(format, args);
+  }
+  return res;
+}
+
 } // end ns anon
 
 void app_main()
 {
+  esp_log_set_vprintf(&beehive_log_override);
+
+  I2CHost i2c_bus{0, SDA, SCL};
+
+  Display display(i2c_bus);
+  display.font_render(NORMAL, "WIFI", 32, 16);
+  display.hline(0, 0, 120);
+  display.update();
+
   ESP_ERROR_CHECK(esp_event_loop_create_default());
   // must be early because it initialises NVS
   beehive::appstate::init();
@@ -236,12 +260,16 @@ void app_main()
   // we need to broadcast our configured state.
   beehive::appstate::promote_configuration();
 
-  I2CHost i2c_bus{0, SDA, SCL};
-
-  Display display(i2c_bus);
   // it seems if I don't bind this to core 0, the i2c
   // subsystem fails randomly.
   xTaskCreatePinnedToCore(sensor_task, "sensor", 8192, &i2c_bus, uxTaskPriorityGet(NULL), NULL, 0);
 
+  s_logging_callback = [&mqtt_client](const char* format, va_list args)
+  {
+//      static char buffer[1024];
+      // int size = snprintf(buffer, 1024, format, args);
+      // mqtt_client.publish("log", buffer, size);
+  };
+  s_logging_callback_set = true;
   mainloop();
 }

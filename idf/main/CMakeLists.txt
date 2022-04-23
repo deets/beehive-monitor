@@ -3,6 +3,8 @@ set(srcs
   main.cpp
   mqtt.hpp
   mqtt.cpp
+  font.c
+  font.h
   display.hpp
   display.cpp
   appstate.hpp

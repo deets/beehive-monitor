@@ -13,7 +13,7 @@ Display::Display(I2CHost &bus)
   : _bus(bus)
 {
   _u8g2 = std::unique_ptr<u8g2_struct>(new u8g2_t{});
-  u8g2_Setup_ssd1306_i2c_128x64_noname_1(
+  u8g2_Setup_ssd1306_i2c_128x64_noname_f(
     _u8g2.get(),
     U8G2_R0,
     Display::s_u8g2_esp32_i2c_byte_cb,
@@ -21,16 +21,14 @@ Display::Display(I2CHost &bus)
   _u8g2->u8x8.user_ptr = this;
   u8g2_InitDisplay(_u8g2.get()); // send init sequence to the display, display is in sleep mode after this,
   u8g2_SetPowerSave(_u8g2.get(), 0); // wake up display
-  u8g2_SetDrawColor(_u8g2.get(), 1);
-  ESP_LOGD(TAG, "u8g2_cb: Drawvline");
-  u8g2_DrawVLine(_u8g2.get(), 10, 5, 20);
-  u8g2_UpdateDisplay(_u8g2.get());
 }
-
 
 Display::~Display()
 {
 }
+
+void Display::update() { u8g2_UpdateDisplay(_u8g2.get()); }
+
 
 uint8_t Display::s_u8g2_esp32_i2c_byte_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
 {
@@ -62,4 +60,28 @@ uint8_t Display::u8g2_esp32_i2c_byte_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_i
     break;
   }
   return 1;
+}
+
+
+void Display::font_render(const font_info_t& font, const char* text, int x, int y)
+{
+  u8g2_SetFontMode(_u8g2.get(), 0); // draw solid (background is rendered)
+  u8g2_SetDrawColor(_u8g2.get(), 1); // draw with white
+  u8g2_SetFont(_u8g2.get(), font.font);
+  u8g2_DrawStr(_u8g2.get(), x, y + font.y_adjust, text);
+}
+
+int Display::font_text_width(const font_info_t& font, const char* text)
+{
+  u8g2_SetFont(_u8g2.get(), font.font);
+  return u8g2_GetStrWidth(_u8g2.get(), text);
+}
+
+void Display::hline(int x, int x2, int y)
+{
+  u8g2_SetDrawColor(_u8g2.get(), 1);
+  u8g2_DrawHLine(
+    _u8g2.get(),
+    x, y, abs(x2 - x) + 1
+    );
 }
