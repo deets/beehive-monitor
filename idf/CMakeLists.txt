@@ -14,4 +14,5 @@ if(NODEMCU)
 endif()
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+idf_build_set_property(COMPILE_OPTIONS "-DU8X8_WITH_USER_PTR" APPEND)
 project(beehive)

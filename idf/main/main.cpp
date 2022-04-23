@@ -1,5 +1,6 @@
 #include "freertos/projdefs.h"
 #include "i2c.hh"
+#include "display.hpp"
 #include "io-buttons.hpp"
 #include "wifi.hh"
 #include "mqtt.hpp"
@@ -236,6 +237,8 @@ void app_main()
   beehive::appstate::promote_configuration();
 
   I2CHost i2c_bus{0, SDA, SCL};
+
+  Display display(i2c_bus);
   // it seems if I don't bind this to core 0, the i2c
   // subsystem fails randomly.
   xTaskCreatePinnedToCore(sensor_task, "sensor", 8192, &i2c_bus, uxTaskPriorityGet(NULL), NULL, 0);
