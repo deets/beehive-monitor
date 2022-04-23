@@ -4,3 +4,6 @@
 [submodule "idf/components/esp32deets"]
 	path = idf/components/esp32deets
 	url = git@github.com:deets/esp32deets.git
+[submodule "idf/components/u8g2"]
+	path = idf/components/u8g2
+	url = https://github.com/olikraus/u8g2.git
