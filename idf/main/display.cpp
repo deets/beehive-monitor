@@ -13,6 +13,7 @@
 #include <math.h>
 #include <memory>
 #include <optional>
+#include <type_traits>
 #include <u8g2.h>
 
 //#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
@@ -132,10 +133,7 @@ void Display::sdcard_info_t::show(Display& display)
     y += 4 + NORMAL.size;
     auto x = 4;
     x += display.font_render(NORMAL, "Writes: ", x, y);
-    std::array<char, 20> datasets_written_str{0};
-    snprintf(datasets_written_str.data(), datasets_written_str.size(),
-             "%u", datasets_written);
-    display.font_render(NORMAL, datasets_written_str.data(), x, y);
+    display.font_render(NORMAL, datasets_written, x, y);
   }
   else
   {
@@ -267,18 +265,50 @@ uint8_t Display::u8g2_esp32_i2c_byte_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_i
 }
 
 
-int Display::font_render(const font_info_t& font, const char* text, int x, int y)
+int Display::font_render(const font_info_t& font, auto value, int x, int y)
 {
+  using ArgT = typename std::remove_const<decltype(value)>::type;
   u8g2_SetFontMode(_u8g2.get(), 0); // draw solid (background is rendered)
   u8g2_SetDrawColor(_u8g2.get(), 1); // draw with white
   u8g2_SetFont(_u8g2.get(), font.font);
-  return u8g2_DrawStr(_u8g2.get(), x, y + font.y_adjust, text);
+  if constexpr (std::is_same_v<ArgT, char*> || std::is_same_v<ArgT, const char*>)
+  {
+    return u8g2_DrawStr(_u8g2.get(), x, y + font.y_adjust, value);
+  }
+  else if constexpr (std::is_same_v<ArgT, size_t>)
+  {
+    std::array<char, 20> value_str{0};
+    snprintf(value_str.data(), value_str.size(),
+             "%u", value);
+    return u8g2_DrawStr(_u8g2.get(), x, y + font.y_adjust, value_str.data());
+  }
+  else {
+    static_assert(!sizeof(ArgT*),
+               "Don't know what you are asking me to do.");
+  }
+  return 0;
 }
 
-int Display::font_text_width(const font_info_t& font, const char* text)
+int Display::font_text_width(const font_info_t& font, auto value)
 {
+  using ArgT = typename std::remove_const<decltype(value)>::type;
   u8g2_SetFont(_u8g2.get(), font.font);
-  return u8g2_GetStrWidth(_u8g2.get(), text);
+  if constexpr (std::is_same_v<ArgT, char*> || std::is_same_v<ArgT, const char*>)
+  {
+    return u8g2_GetStrWidth(_u8g2.get(), value);
+  }
+  else if constexpr (std::is_same_v<ArgT, size_t>)
+  {
+    std::array<char, 20> value_str{0};
+    snprintf(value_str.data(), value_str.size(),
+             "%u", value);
+    return u8g2_GetStrWidth(_u8g2.get(), value_str.data());
+  }
+  else {
+    static_assert(!sizeof(ArgT*),
+               "Don't know what you are asking me to do.");
+  }
+  return 0;
 }
 
 void Display::hline(int x, int x2, int y)
