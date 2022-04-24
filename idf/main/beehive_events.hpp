@@ -43,7 +43,7 @@ namespace mqtt {
 
 enum mqtt_events_t { PUBLISHED };
 
-void published();
+void published(size_t);
 
 }
 

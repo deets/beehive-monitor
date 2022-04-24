@@ -18,6 +18,8 @@ public:
   int publish(const char *topic, const char *data, int len=0, int qos=0, int retain=0);
 private:
 
+  void publish_message_backlog_count();
+
   static void s_handle_mqtt_event(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
   void handle_mqtt_event(esp_event_base_t event_base, int32_t event_id, void *event_data);
 

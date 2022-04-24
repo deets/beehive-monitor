@@ -14,6 +14,7 @@ ESP_EVENT_DEFINE_BASE(CONFIG_EVENTS);
 ESP_EVENT_DEFINE_BASE(SENSOR_EVENTS);
 ESP_EVENT_DEFINE_BASE(BUTTON_EVENTS);
 ESP_EVENT_DEFINE_BASE(SDCARD_EVENTS);
+// Needs the BEEHIVE_ because MQTT_EVENTS is from the system
 ESP_EVENT_DEFINE_BASE(BEEHIVE_MQTT_EVENTS);
 
 #ifdef __cplusplus
@@ -38,11 +39,11 @@ namespace beehive::events {
 
 namespace mqtt {
 
-void published()
+void published(size_t message_backlog_count)
 {
   esp_event_post(
     BEEHIVE_MQTT_EVENTS, PUBLISHED,
-    nullptr, 0, 0);
+    &message_backlog_count, sizeof(message_backlog_count), 0);
 }
 
 } // namespace mqtt

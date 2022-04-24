@@ -65,7 +65,13 @@ void sdcard_event_handler(void *event_handler_arg, esp_event_base_t event_base, 
 void mqtt_event_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
   EventGroupHandle_t event_group = static_cast<EventGroupHandle_t>(event_handler_arg);
-  xEventGroupSetBits(event_group, MQTT_PUBLISHED_BIT);
+  size_t message_backlog = *static_cast<size_t*>(event_data);
+  // if message_backlog is empty, we set the bit to indicated
+  // all messages have been served for now!
+  if(message_backlog == 0)
+  {
+    xEventGroupSetBits(event_group, MQTT_PUBLISHED_BIT);
+  }
 }
 
 

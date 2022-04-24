@@ -183,6 +183,35 @@ void Display::sensor_info_t::show(Display& display)
 }
 
 
+Display::mqtt_info_t::mqtt_info_t() : Display::event_listener_base_t{{BEEHIVE_MQTT_EVENTS}} {}
+
+void Display::mqtt_info_t::event_handler(esp_event_base_t event_base,
+                         int32_t event_id, void* event_data)
+{
+  const auto mqtt_event_id = beehive::events::mqtt::mqtt_events_t(event_id);
+  switch(mqtt_event_id)
+  {
+  case beehive::events::mqtt::PUBLISHED:
+    message_backlog = *static_cast<size_t*>(event_data);
+    break;
+  }
+}
+
+void Display::mqtt_info_t::show(Display& display)
+{
+  auto y = NORMAL.size + 1;
+  display.font_render(NORMAL, "MQTT", 2, y);
+  y += 4 + NORMAL.size;
+  auto x = 4;
+  x += display.font_render(NORMAL, "Host: ", x, y);
+  display.font_render(NORMAL, beehive::appstate::mqtt_host().c_str(), x, y);
+  y += 4 + NORMAL.size;
+  x = 4;
+  x += display.font_render(NORMAL, "Backlog#: ", x, y);
+  display.font_render(NORMAL, message_backlog, x, y);
+}
+
+
 void Display::start_info_t::show(Display &display)
 {
   auto y = NORMAL.size + 1;
@@ -266,6 +295,9 @@ void Display::task()
     case SENSORS:
       _sensor_info.show(*this);
       break;
+    case MQTT:
+      _mqtt_info.show(*this);
+      break;
     }
     update();
   }
@@ -290,6 +322,9 @@ void Display::progress_state()
       _state = SENSORS;
       break;
     case SENSORS:
+      _state = MQTT;
+      break;
+    case MQTT:
       _state = START;
       break;
     }

@@ -22,7 +22,8 @@ class Display {
     WIFI,
     SDCARD,
     SYSTEM,
-    SENSORS
+    SENSORS,
+    MQTT
   };
 
   struct event_listener_base_t
@@ -81,6 +82,17 @@ class Display {
     size_t sensor_readings = 0;
   };
 
+  struct mqtt_info_t : event_listener_base_t {
+
+    mqtt_info_t();
+    void event_handler(esp_event_base_t event_base,
+                       int32_t event_id, void* event_data) override;
+
+    void show(Display&);
+
+    size_t message_backlog;
+  };
+
 public:
   Display(I2CHost&);
   ~Display();
@@ -110,6 +122,7 @@ private:
   sdcard_info_t _sdcard_info;
   system_info_t _system_info;
   sensor_info_t _sensor_info;
+  mqtt_info_t _mqtt_info;
 
   int64_t _state_switch_timestamp;
 };
