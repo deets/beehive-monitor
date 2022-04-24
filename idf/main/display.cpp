@@ -1,8 +1,10 @@
 #include "display.hpp"
 
+#include <cstdint>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <esp_timer.h>
+#include <esp_ota_ops.h>
 
 #include <math.h>
 #include <memory>
@@ -13,6 +15,8 @@
 #include <esp_log.h>
 
 #define TAG "disp"
+
+const int64_t STATE_SHOW_TIME = 3000000;
 
 Display::wifi_info_t::wifi_info_t()
 {
@@ -74,7 +78,7 @@ void Display::wifi_info_t::show(Display& display)
   auto x = 4;
   x += display.font_render(NORMAL, "Connected: ", x, y);
   display.font_render(NORMAL, connected ? "YES" : "NO", x, y);
-  y += 2 + NORMAL.size;
+  y += 4 + NORMAL.size;
   x = 4;
   x += display.font_render(NORMAL, "IP: ", x, y);
   if(ip_address)
@@ -88,6 +92,17 @@ void Display::wifi_info_t::show(Display& display)
   {
     display.font_render(NORMAL, "<UNKNOWN>", x, y);
   }
+}
+
+
+void Display::start_info_t::show(Display &display)
+{
+  auto y = NORMAL.size + 1;
+  display.font_render(NORMAL, "START", 2, y);
+  const auto app_desc = esp_ota_get_app_description();
+  y = 64 - 2;
+  auto x = 128 - 2 - display.font_text_width(SMALL, app_desc->version);
+  display.font_render(SMALL, app_desc->version, x, y);
 }
 
 Display::Display(I2CHost &bus)
@@ -117,12 +132,39 @@ void Display::s_task(void* user_data)
 
 void Display::task()
 {
+  _state_switch_timestamp = esp_timer_get_time() + STATE_SHOW_TIME;
   while(true)
   {
     vTaskDelay(100 / portTICK_PERIOD_MS);
+    progress_state();
     clear();
-    _wifi_info.show(*this);
+    switch(_state)
+    {
+    case WIFI:
+      _wifi_info.show(*this);
+      break;
+    case START:
+      _start_info.show(*this);
+      break;
+    }
     update();
+  }
+}
+
+void Display::progress_state()
+{
+  if(esp_timer_get_time() > _state_switch_timestamp)
+  {
+    switch(_state)
+    {
+    case START:
+      _state = WIFI;
+      break;
+    case WIFI:
+      _state = START;
+      break;
+    }
+    _state_switch_timestamp += STATE_SHOW_TIME;
   }
 }
 

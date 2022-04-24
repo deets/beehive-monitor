@@ -2,6 +2,7 @@
 
 #include "i2c.hh"
 
+#include <cstdint>
 #include <esp_event_base.h>
 #include <esp_event.h>
 
@@ -13,6 +14,18 @@ struct u8g2_struct;
 struct u8x8_struct;
 
 class Display {
+
+  enum display_state_e
+  {
+    START,
+    WIFI
+  };
+
+
+  struct start_info_t {
+    void show(Display&);
+  };
+
   struct wifi_info_t {
     wifi_info_t();
     static void s_event_handler(void* arg, esp_event_base_t event_base,
@@ -39,7 +52,7 @@ public:
 private:
   static void s_task(void*);
   void task();
-
+  void progress_state();
   float elapsed() const;
 
   static uint8_t s_u8g2_esp32_i2c_byte_cb(u8x8_struct *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
@@ -49,5 +62,8 @@ private:
   std::unique_ptr<u8g2_struct> _u8g2;
   std::vector<uint8_t> _i2c_buffer;
 
+  display_state_e _state = START;
+  start_info_t _start_info;
   wifi_info_t _wifi_info;
+  int64_t _state_switch_timestamp;
 };
