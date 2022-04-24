@@ -207,16 +207,16 @@ int beehive_log_override(const char * format, va_list args)
 
 void app_main()
 {
+  // Must be the first, because we heavily rely
+  // on the event system!
+  ESP_ERROR_CHECK(esp_event_loop_create_default());
+
   esp_log_set_vprintf(&beehive_log_override);
 
   I2CHost i2c_bus{0, SDA, SCL};
 
   Display display(i2c_bus);
-  display.font_render(NORMAL, "WIFI", 32, 16);
-  display.hline(0, 0, 120);
-  display.update();
 
-  ESP_ERROR_CHECK(esp_event_loop_create_default());
   // must be early because it initialises NVS
   beehive::appstate::init();
   beehive::iobuttons::setup();
