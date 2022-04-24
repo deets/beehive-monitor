@@ -19,7 +19,8 @@ class Display {
   enum display_state_e
   {
     START,
-    WIFI
+    WIFI,
+    SDCARD
   };
 
   struct event_listener_base_t
@@ -48,7 +49,21 @@ class Display {
     std::optional<esp_ip4_addr> ip_address;
   };
 
-public:
+  struct sdcard_info_t : event_listener_base_t {
+
+    sdcard_info_t();
+    void event_handler(esp_event_base_t event_base,
+                       int32_t event_id, void* event_data) override;
+
+    void show(Display&);
+
+    bool mounted = false;
+    size_t datasets_written = 0;
+    bool no_file = false;
+  };
+
+
+  public:
   Display(I2CHost&);
   ~Display();
 
@@ -74,5 +89,7 @@ private:
   display_state_e _state = START;
   start_info_t _start_info;
   wifi_info_t _wifi_info;
+  sdcard_info_t _sdcard_info;
+
   int64_t _state_switch_timestamp;
 };

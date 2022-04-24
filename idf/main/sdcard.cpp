@@ -128,6 +128,8 @@ SDCardWriter::SDCardWriter()
     }
     // Card has been initialized, print its properties
     sdmmc_card_print_info(stdout, _card);
+    esp_event_post(
+      SDCARD_EVENTS, beehive::events::sdcard::MOUNTED, nullptr, 0, 0);
 
     ESP_ERROR_CHECK(esp_event_handler_instance_register(SENSOR_EVENTS, beehive::events::sensors::SENSOR_EVENT_SHT3XDIS_READINGS, SDCardWriter::s_sensor_event_handler, this, NULL));
     setup_file_info();
@@ -304,7 +306,7 @@ void SDCardWriter::sensor_event_handler(esp_event_base_t base, beehive::events::
       report_file_size();
 
       esp_event_post(
-	SDCARD_EVENTS, beehive::events::sdcard::DATASET_WRITTEN, nullptr, 0, 0);
+	SDCARD_EVENTS, beehive::events::sdcard::DATASET_WRITTEN, &_datasets_written, sizeof(_datasets_written), 0);
     }
     else
     {

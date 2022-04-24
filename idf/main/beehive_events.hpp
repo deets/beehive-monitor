@@ -75,6 +75,7 @@ namespace sdcard {
 
 enum sdcard_events_t
 {
+  MOUNTED,
   DATASET_WRITTEN,
   NO_FILE
 };

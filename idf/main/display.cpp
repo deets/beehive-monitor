@@ -1,11 +1,13 @@
 #include "display.hpp"
-#include "esp_event_base.h"
+#include "beehive_events.hpp"
 
+#include <array>
 #include <cstdint>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <esp_timer.h>
 #include <esp_ota_ops.h>
+#include <esp_event_base.h>
 
 #include <initializer_list>
 #include <math.h>
@@ -100,6 +102,50 @@ void Display::wifi_info_t::show(Display& display)
 }
 
 
+Display::sdcard_info_t::sdcard_info_t() : Display::event_listener_base_t{{SDCARD_EVENTS}} {}
+
+void Display::sdcard_info_t::event_handler(esp_event_base_t event_base,
+                         int32_t event_id, void* event_data)
+{
+  const auto sdcard_event_id = beehive::events::sdcard::sdcard_events_t(event_id);
+  switch(sdcard_event_id)
+  {
+  case beehive::events::sdcard::MOUNTED:
+    mounted = true;
+    break;
+  case beehive::events::sdcard::DATASET_WRITTEN:
+    datasets_written = *static_cast<size_t*>(event_data);
+    no_file = false;
+    break;
+  case beehive::events::sdcard::NO_FILE:
+    no_file = true;
+    break;
+  }
+}
+
+void Display::sdcard_info_t::show(Display& display)
+{
+  auto y = NORMAL.size + 1;
+  display.font_render(NORMAL, "SDCARD", 2, y);
+  if(mounted)
+  {
+    y += 4 + NORMAL.size;
+    auto x = 4;
+    x += display.font_render(NORMAL, "Writes: ", x, y);
+    std::array<char, 20> datasets_written_str{0};
+    snprintf(datasets_written_str.data(), datasets_written_str.size(),
+             "%u", datasets_written);
+    display.font_render(NORMAL, datasets_written_str.data(), x, y);
+  }
+  else
+  {
+    const auto x = (128 - display.font_text_width(NORMAL, "NOT_MOUNTED")) / 2;
+    const auto y = (64 - NORMAL.size) / 2;
+    display.font_render(NORMAL, "NOT MOUNTED", x, y);
+  }
+}
+
+
 void Display::start_info_t::show(Display &display)
 {
   auto y = NORMAL.size + 1;
@@ -151,6 +197,9 @@ void Display::task()
     case START:
       _start_info.show(*this);
       break;
+    case SDCARD:
+      _sdcard_info.show(*this);
+      break;
     }
     update();
   }
@@ -166,6 +215,9 @@ void Display::progress_state()
       _state = WIFI;
       break;
     case WIFI:
+      _state = SDCARD;
+      break;
+    case SDCARD:
       _state = START;
       break;
     }
