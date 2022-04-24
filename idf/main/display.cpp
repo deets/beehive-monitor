@@ -1,4 +1,5 @@
 #include "display.hpp"
+#include "esp_event_base.h"
 
 #include <cstdint>
 #include <freertos/FreeRTOS.h>
@@ -6,6 +7,7 @@
 #include <esp_timer.h>
 #include <esp_ota_ops.h>
 
+#include <initializer_list>
 #include <math.h>
 #include <memory>
 #include <optional>
@@ -18,25 +20,28 @@
 
 const int64_t STATE_SHOW_TIME = 3000000;
 
-Display::wifi_info_t::wifi_info_t()
+Display::event_listener_base_t::event_listener_base_t(std::initializer_list<esp_event_base_t> bases)
 {
-  for(const auto event_base : {WIFI_EVENT, IP_EVENT})
+  for(const auto event_base : bases)
   {
     ESP_ERROR_CHECK(esp_event_handler_instance_register(event_base,
                                                         ESP_EVENT_ANY_ID,
-                                                        &Display::wifi_info_t::s_event_handler,
+                                                        &Display::event_listener_base_t::s_event_handler,
                                                         this,
                                                         NULL));
   }
 }
 
-void Display::wifi_info_t::s_event_handler(void* arg, esp_event_base_t event_base,
+void Display::event_listener_base_t::s_event_handler(void* arg, esp_event_base_t event_base,
                          int32_t event_id, void* event_data)
 {
-  static_cast<Display::wifi_info_t*>(arg)->event_handler(
+  static_cast<Display::event_listener_base_t*>(arg)->event_handler(
     event_base, event_id, event_data
     );
 }
+
+
+Display::wifi_info_t::wifi_info_t() : Display::event_listener_base_t{{WIFI_EVENT, IP_EVENT}} {}
 
 void Display::wifi_info_t::event_handler(esp_event_base_t event_base,
                          int32_t event_id, void* event_data)

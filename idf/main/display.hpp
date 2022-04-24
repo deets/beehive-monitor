@@ -6,6 +6,7 @@
 #include <esp_event_base.h>
 #include <esp_event.h>
 
+#include <initializer_list>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -21,17 +22,25 @@ class Display {
     WIFI
   };
 
+  struct event_listener_base_t
+  {
+    event_listener_base_t(std::initializer_list<esp_event_base_t>);
+    static void s_event_handler(void* arg, esp_event_base_t event_base,
+                         int32_t event_id, void* event_data);
+    virtual void event_handler(esp_event_base_t event_base,
+                       int32_t event_id, void* event_data) = 0;
+
+  };
 
   struct start_info_t {
     void show(Display&);
   };
 
-  struct wifi_info_t {
+  struct wifi_info_t : event_listener_base_t {
+
     wifi_info_t();
-    static void s_event_handler(void* arg, esp_event_base_t event_base,
-                         int32_t event_id, void* event_data);
     void event_handler(esp_event_base_t event_base,
-                         int32_t event_id, void* event_data);
+                       int32_t event_id, void* event_data) override;
 
     void show(Display&);
 
