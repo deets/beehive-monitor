@@ -74,7 +74,7 @@ MQTTClient::MQTTClient(size_t counter)
   esp_mqtt_client_start(_client);
 
   ESP_ERROR_CHECK(esp_event_handler_instance_register(CONFIG_EVENTS, esp_mqtt_event_id_t(ESP_EVENT_ANY_ID), MQTTClient::s_config_event_handler, this, NULL));
-  ESP_ERROR_CHECK(esp_event_handler_instance_register(SENSOR_EVENTS, beehive::events::sensors::SENSOR_EVENT_SHT3XDIS_READINGS, MQTTClient::s_sensor_event_handler, this, NULL));
+  ESP_ERROR_CHECK(esp_event_handler_instance_register(SENSOR_EVENTS, beehive::events::sensors::SHT3XDIS_READINGS, MQTTClient::s_sensor_event_handler, this, NULL));
 }
 
 int MQTTClient::publish(const char *topic, const char *data, int len, int qos,

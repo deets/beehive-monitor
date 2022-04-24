@@ -87,6 +87,11 @@ Sensors::Sensors(I2CHost& bus)
       }
     }
   }
+  auto sensor_count = _sensors.size();
+  esp_event_post(
+    SENSOR_EVENTS, SHT3XDIS_COUNT,
+    &sensor_count, sizeof(sensor_count),
+    0);
 }
 
 Sensors::~Sensors() {}

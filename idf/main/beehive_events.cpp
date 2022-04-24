@@ -71,7 +71,7 @@ void send_readings(const std::vector<sht3xdis_value_t>& readings)
   std::memcpy(&p->values[0], readings.data(), payload_size);
 
   esp_event_post(
-    SENSOR_EVENTS, SENSOR_EVENT_SHT3XDIS_READINGS,
+    SENSOR_EVENTS, SHT3XDIS_READINGS,
     block.data(), block.size(),
     0);
 }
@@ -80,7 +80,7 @@ std::optional<std::vector<sht3xdis_value_t>> receive_readings(sensor_events_t ki
 {
   switch(kind)
   {
-  case SENSOR_EVENT_SHT3XDIS_READINGS:
+  case SHT3XDIS_READINGS:
     {
       const auto p = (sht3xdis_event_t*)event_data;
       std::vector<sht3xdis_value_t> result(p->count);

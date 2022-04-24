@@ -21,7 +21,8 @@ class Display {
     START,
     WIFI,
     SDCARD,
-    SYSTEM
+    SYSTEM,
+    SENSORS
   };
 
   struct event_listener_base_t
@@ -68,7 +69,19 @@ class Display {
     void show(Display&);
   };
 
-  public:
+  struct sensor_info_t : event_listener_base_t {
+
+    sensor_info_t();
+    void event_handler(esp_event_base_t event_base,
+                       int32_t event_id, void* event_data) override;
+
+    void show(Display&);
+
+    size_t sensor_count = 0;
+    size_t sensor_readings = 0;
+  };
+
+public:
   Display(I2CHost&);
   ~Display();
 
@@ -96,6 +109,7 @@ private:
   wifi_info_t _wifi_info;
   sdcard_info_t _sdcard_info;
   system_info_t _system_info;
+  sensor_info_t _sensor_info;
 
   int64_t _state_switch_timestamp;
 };

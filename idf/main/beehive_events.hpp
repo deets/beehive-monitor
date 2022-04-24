@@ -51,7 +51,8 @@ namespace sensors {
 
 enum sensor_events_t
 {
-  SENSOR_EVENT_SHT3XDIS_READINGS
+  SHT3XDIS_COUNT,
+  SHT3XDIS_READINGS
 };
 
 struct sht3xdis_value_t

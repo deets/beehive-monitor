@@ -131,7 +131,7 @@ SDCardWriter::SDCardWriter()
     esp_event_post(
       SDCARD_EVENTS, beehive::events::sdcard::MOUNTED, nullptr, 0, 0);
 
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(SENSOR_EVENTS, beehive::events::sensors::SENSOR_EVENT_SHT3XDIS_READINGS, SDCardWriter::s_sensor_event_handler, this, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(SENSOR_EVENTS, beehive::events::sensors::SHT3XDIS_READINGS, SDCardWriter::s_sensor_event_handler, this, NULL));
     setup_file_info();
 }
 

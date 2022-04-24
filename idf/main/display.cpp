@@ -146,6 +146,43 @@ void Display::sdcard_info_t::show(Display& display)
 }
 
 
+Display::sensor_info_t::sensor_info_t() : Display::event_listener_base_t{{SENSOR_EVENTS}} {}
+
+void Display::sensor_info_t::event_handler(esp_event_base_t event_base,
+                         int32_t event_id, void* event_data)
+{
+  const auto sensor_event_id = beehive::events::sensors::sensor_events_t(event_id);
+  switch(sensor_event_id)
+  {
+  case beehive::events::sensors::SHT3XDIS_COUNT:
+    sensor_count = *static_cast<size_t*>(event_data);
+    break;
+  case beehive::events::sensors::SHT3XDIS_READINGS:
+    ++sensor_readings;
+    break;
+  }
+}
+
+void Display::sensor_info_t::show(Display& display)
+{
+  auto y = NORMAL.size + 1;
+  display.font_render(NORMAL, "SENSOR", 2, y);
+  y += 4 + NORMAL.size;
+  auto x = 4;
+  x += display.font_render(NORMAL, "Readings: ", x, y);
+  display.font_render(NORMAL, sensor_readings, x, y);
+  y += 4 + NORMAL.size;
+  x = 4;
+  x += display.font_render(NORMAL, "Sensor#: ", x, y);
+  display.font_render(NORMAL, sensor_count, x, y);
+  x = 4;
+  y += 4 + NORMAL.size;
+  x += display.font_render(NORMAL, "Sleeptime: ", x, y);
+  x += display.font_render(NORMAL, size_t(beehive::appstate::sleeptime()), x, y);
+  x += display.font_render(NORMAL, "s", x, y);
+}
+
+
 void Display::start_info_t::show(Display &display)
 {
   auto y = NORMAL.size + 1;
@@ -226,6 +263,9 @@ void Display::task()
     case SYSTEM:
       _system_info.show(*this);
       break;
+    case SENSORS:
+      _sensor_info.show(*this);
+      break;
     }
     update();
   }
@@ -247,6 +287,9 @@ void Display::progress_state()
       _state = SYSTEM;
       break;
     case SYSTEM:
+      _state = SENSORS;
+      break;
+    case SENSORS:
       _state = START;
       break;
     }
