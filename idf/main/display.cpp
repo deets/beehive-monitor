@@ -1,5 +1,7 @@
 #include "display.hpp"
+#include "appstate.hpp"
 #include "beehive_events.hpp"
+#include "util.hpp"
 
 #include <array>
 #include <cstdint>
@@ -154,6 +156,29 @@ void Display::start_info_t::show(Display &display)
   display.font_render(SMALL, app_desc->version, x, y);
 }
 
+void Display::system_info_t::show(Display &display)
+{
+  auto y = NORMAL.size + 1;
+  display.font_render(NORMAL, "SYSTEM", 2, y);
+  y += 4 + NORMAL.size;
+  auto x = 4;
+  x += display.font_render(NORMAL, "Name: ", x, y);
+  display.font_render(NORMAL, beehive::appstate::system_name().c_str(), x, y);
+
+  const auto dt = beehive::util::isoformat();
+  const auto date = dt.substr(0, 10);
+  const auto time = dt.substr(11, 8);
+
+  y += 4 + NORMAL.size;
+  x = 4;
+  x += display.font_render(NORMAL, "Date: ", x, y);
+  display.font_render(NORMAL, date.c_str(), x, y);
+  y += 4 + NORMAL.size;
+  x = 4;
+  x += display.font_render(NORMAL, "Time: ", x, y);
+  display.font_render(NORMAL, time.c_str(), x, y);
+}
+
 Display::Display(I2CHost &bus)
   : _bus(bus)
 {
@@ -198,6 +223,9 @@ void Display::task()
     case SDCARD:
       _sdcard_info.show(*this);
       break;
+    case SYSTEM:
+      _system_info.show(*this);
+      break;
     }
     update();
   }
@@ -216,6 +244,9 @@ void Display::progress_state()
       _state = SDCARD;
       break;
     case SDCARD:
+      _state = SYSTEM;
+      break;
+    case SYSTEM:
       _state = START;
       break;
     }

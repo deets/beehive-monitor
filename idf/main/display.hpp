@@ -20,7 +20,8 @@ class Display {
   {
     START,
     WIFI,
-    SDCARD
+    SDCARD,
+    SYSTEM
   };
 
   struct event_listener_base_t
@@ -62,6 +63,10 @@ class Display {
     bool no_file = false;
   };
 
+  struct system_info_t
+  {
+    void show(Display&);
+  };
 
   public:
   Display(I2CHost&);
@@ -90,6 +95,7 @@ private:
   start_info_t _start_info;
   wifi_info_t _wifi_info;
   sdcard_info_t _sdcard_info;
+  system_info_t _system_info;
 
   int64_t _state_switch_timestamp;
 };
