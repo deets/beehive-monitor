@@ -2,7 +2,7 @@
 #include "i2c.hh"
 #include "display.hpp"
 #include "io-buttons.hpp"
-#include "wifi.hh"
+#include "wifi.hpp"
 #include "mqtt.hpp"
 #include "sensors.hpp"
 #include "sdcard.hpp"
@@ -213,6 +213,8 @@ int beehive_log_override(const char * format, va_list args)
 
 void app_main()
 {
+  esp_log_level_set("mqtt", ESP_LOG_DEBUG);
+
   // Must be the first, because we heavily rely
   // on the event system!
   ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -231,7 +233,7 @@ void app_main()
     beehive::events::buttons::OTA,
     [](beehive::events::buttons::button_events_t) {
       s_caffeine = true;
-      if(wifi_connected())
+      if(deets::wifi::connected())
       {
 	ESP_LOGI(TAG, "Connected to WIFI, run OTA");
 	start_ota_task();
@@ -251,7 +253,7 @@ void app_main()
     }
     );
 
-  setup_wifi();
+  deets::wifi::setup();
   start_mdns_service();
   start_ntp_service();
 

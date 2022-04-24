@@ -12,8 +12,6 @@
 #include <sstream>
 #include <iomanip>
 
-#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
-
 #define TAG "mqtt"
 
 namespace beehive::mqtt {
@@ -119,6 +117,16 @@ void MQTTClient::handle_mqtt_event(esp_event_base_t event_base, int32_t event_id
     break;
   case MQTT_EVENT_ERROR:
     ESP_LOGD(TAG, "MQTT_EVENT_ERROR");
+    break;
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)
+  case MQTT_EVENT_DELETED:
+    ESP_LOGD(TAG, "MQTT_EVENT_DELETED, msg_id=%d", event->msg_id);
+    _published_messages.erase(event->msg_id);
+    beehive::events::mqtt::published(_published_messages.size());
+    break;
+#endif
+  case MQTT_EVENT_BEFORE_CONNECT:
+    ESP_LOGD(TAG, "MQTT_EVENT_BEFORE_CONNECT");
     break;
   default:
     ESP_LOGD(TAG, "Other event id:%d", event_id);
