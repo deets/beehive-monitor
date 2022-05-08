@@ -11,18 +11,18 @@
 #error "Define one of NODEMCU or TTGO"
 #endif
 
-#ifdef BOARD_NODEMCU
-#define PIN_NUM_OTA gpio_num_t(0)
-#define PIN_NUM_MODE gpio_num_t(25)
-
 // Pin mapping when using SPI mode.
 // With this mapping, SD card can be used both in SPI and 1-line SD mode.
 // Note that a pull-up on CS line is required in SD mode.
+#define SDCARD_MISO gpio_num_t(2)
+#define SDCARD_MOSI gpio_num_t(15)
+#define SDCARD_CLK  gpio_num_t(14)
+#define SDCARD_CS   gpio_num_t(13)
 
-#define PIN_NUM_MISO gpio_num_t(2)
-#define PIN_NUM_MOSI gpio_num_t(15)
-#define PIN_NUM_CLK  gpio_num_t(14)
-#define PIN_NUM_CS   gpio_num_t(13)
+#define PIN_NUM_OTA gpio_num_t(0)
+
+#ifdef BOARD_NODEMCU
+#define PIN_NUM_MODE gpio_num_t(25)
 
 #define SDA gpio_num_t(26)
 #define SCL gpio_num_t(27)
@@ -30,17 +30,7 @@
 #endif // BOARD_NODEMCU
 
 #ifdef BOARD_TTGO
-#define PIN_NUM_OTA gpio_num_t(0)
 #define PIN_NUM_MODE gpio_num_t(34)
-
-// Pin mapping when using SPI mode.
-// With this mapping, SD card can be used both in SPI and 1-line SD mode.
-// Note that a pull-up on CS line is required in SD mode.
-
-#define PIN_NUM_MISO gpio_num_t(2)
-#define PIN_NUM_MOSI gpio_num_t(15)
-#define PIN_NUM_CLK  gpio_num_t(14)
-#define PIN_NUM_CS   gpio_num_t(13)
 
 #define SDA gpio_num_t(21)
 #define SCL gpio_num_t(22)
