@@ -21,6 +21,8 @@ set(srcs
   util.cpp
   sdcard.hpp
   sdcard.cpp
+  systemconfig.hpp
+  systemconfig.cpp
   smartconfig.hpp
   smartconfig.cpp
   #wifi-provisioning.hpp

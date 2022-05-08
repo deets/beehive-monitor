@@ -12,6 +12,7 @@
 #include "wifi-provisioning.hpp"
 #include "smartconfig.hpp"
 #include "appstate.hpp"
+#include "systemconfig.hpp"
 
 #include "mqtt_client.h"
 #include <freertos/FreeRTOS.h>
