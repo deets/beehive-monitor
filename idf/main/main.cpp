@@ -199,20 +199,6 @@ void start_mdns_service()
     mdns_service_instance_name_set("_http", "_tcp", ss.str().c_str());
 }
 
-std::atomic<bool> s_logging_callback_set;
-std::function<void(const char *, va_list args)> s_logging_callback;
-
-int beehive_log_override(const char * format, va_list args)
-{
-  // produce serial output as normal
-  int res = vprintf(format, args);
-  if(s_logging_callback_set)
-  {
-    s_logging_callback(format, args);
-  }
-  return res;
-}
-
 } // end ns anon
 
 void app_main()
@@ -227,7 +213,9 @@ void app_main()
 
   I2CHost i2c_bus{0, SDA, SCL};
 
+  #ifdef BOARD_TTGO
   Display display(i2c_bus);
+  #endif
 
   // must be early because it initialises NVS
   beehive::appstate::init();
@@ -257,13 +245,15 @@ void app_main()
     }
     );
 
+  // we first need to setup wifi, because otherwise
+  // MQTT fails due to missing network stack initialisation!
   deets::wifi::setup();
   start_mdns_service();
   start_ntp_service();
 
-  // we first need to setup wifi, because otherwise
-  // MQTT fails due to missing network stack initialisation!
   sdcard::SDCardWriter sdcard_writer;
+  // We pass the total_datasets_written as sequence number to start
+  // from
   mqtt::MQTTClient mqtt_client(sdcard_writer.total_datasets_written());
 
   beehive::http::HTTPServer http_server([&sdcard_writer]() { return sdcard_writer.file_count();});
@@ -276,12 +266,5 @@ void app_main()
   // subsystem fails randomly.
   xTaskCreatePinnedToCore(sensor_task, "sensor", 8192, &i2c_bus, uxTaskPriorityGet(NULL), NULL, 0);
 
-  s_logging_callback = [&mqtt_client](const char* format, va_list args)
-  {
-//      static char buffer[1024];
-      // int size = snprintf(buffer, 1024, format, args);
-      // mqtt_client.publish("log", buffer, size);
-  };
-  s_logging_callback_set = true;
   mainloop();
 }
