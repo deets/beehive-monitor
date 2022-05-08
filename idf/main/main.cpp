@@ -13,6 +13,9 @@
 #include "smartconfig.hpp"
 #include "appstate.hpp"
 #include "systemconfig.hpp"
+#ifdef BOARD_TTGO
+#include "rf95.hpp"
+#endif
 
 #include "mqtt_client.h"
 #include <freertos/FreeRTOS.h>
