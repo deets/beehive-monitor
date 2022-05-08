@@ -6,12 +6,20 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fconcepts")
 
 set(TTGO OFF CACHE BOOL "Use TTGO LoRa32")
 set(NODEMCU OFF CACHE BOOL "Use NodeMCU")
+set(LORA OFF CACHE BOOL "Use LORA (")
 
 if(TTGO)
   add_definitions(-DBOARD_TTGO)
+  if(LORA)
+    add_definitions(-DUSE_LORA)
+  endif()
 endif()
+
 if(NODEMCU)
   add_definitions(-DBOARD_NODEMCU)
+  if(LORA)
+    message(FATAL_ERROR "Can't use LoRa on NodeMCU")
+  endif()
 endif()
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
