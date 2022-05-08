@@ -6,7 +6,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fconcepts")
 
 set(TTGO OFF CACHE BOOL "Use TTGO LoRa32")
 set(NODEMCU OFF CACHE BOOL "Use NodeMCU")
-set(LORA OFF CACHE BOOL "Use LORA (")
+set(LORA OFF CACHE BOOL "Use LORA (Only on LoRa32)")
 
 if(TTGO)
   add_definitions(-DBOARD_TTGO)
