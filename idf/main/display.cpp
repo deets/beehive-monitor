@@ -2,6 +2,7 @@
 #include "appstate.hpp"
 #include "beehive_events.hpp"
 #include "util.hpp"
+#include "lora.hpp"
 
 #include <array>
 #include <cstdint>
@@ -103,6 +104,18 @@ void Display::wifi_info_t::show(Display& display)
     display.font_render(NORMAL, "<UNKNOWN>", x, y);
   }
 }
+
+#ifdef USE_LORA
+void Display::lora_info_t::show(Display& display)
+{
+  auto y = NORMAL.size + 1;
+  display.font_render(NORMAL, "LORA", 2, y);
+  y += 4 + NORMAL.size;
+  auto x = 4;
+  x += display.font_render(NORMAL, "Role: ", x, y);
+  display.font_render(NORMAL, beehive::lora::is_field_device() ? "FIELD" : "BASE", x, y);
+}
+#endif
 
 
 Display::sdcard_info_t::sdcard_info_t() : Display::event_listener_base_t{{SDCARD_EVENTS}} {}
@@ -283,6 +296,11 @@ void Display::task()
     case WIFI:
       _wifi_info.show(*this);
       break;
+#ifdef USE_LORA
+    case LORA:
+      _lora_info.show(*this);
+      break;
+#endif
     case START:
       _start_info.show(*this);
       break;
@@ -312,9 +330,18 @@ void Display::progress_state()
     case START:
       _state = WIFI;
       break;
+#ifdef USE_LORA
+    case WIFI:
+      _state = LORA;
+      break;
+    case LORA:
+      _state = SDCARD;
+      break;
+#else
     case WIFI:
       _state = SDCARD;
       break;
+#endif
     case SDCARD:
       _state = SYSTEM;
       break;

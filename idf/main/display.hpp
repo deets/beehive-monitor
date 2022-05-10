@@ -20,6 +20,9 @@ class Display {
   {
     START,
     WIFI,
+    #ifdef USE_LORA
+    LORA,
+    #endif
     SDCARD,
     SYSTEM,
     SENSORS,
@@ -51,6 +54,13 @@ class Display {
     bool connected = false;
     std::optional<esp_ip4_addr> ip_address;
   };
+
+#ifdef USE_LORA
+  struct lora_info_t
+  {
+    void show(Display&);
+  };
+#endif
 
   struct sdcard_info_t : event_listener_base_t {
 
@@ -118,6 +128,9 @@ private:
 
   display_state_e _state = START;
   start_info_t _start_info;
+  #ifdef USE_LORA
+  lora_info_t _lora_info;
+  #endif
   wifi_info_t _wifi_info;
   sdcard_info_t _sdcard_info;
   system_info_t _system_info;

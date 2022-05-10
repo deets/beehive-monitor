@@ -5,8 +5,8 @@
 #include <array>
 #include <cinttypes>
 
-namespace deets::beehive::systemconfig {
+namespace beehive::lora {
 
-bool is_lora_sender(const std::array<uint8_t, 6>& mac);
+bool is_field_device();
 
 }

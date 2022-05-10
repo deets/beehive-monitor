@@ -12,7 +12,6 @@
 #include "wifi-provisioning.hpp"
 #include "smartconfig.hpp"
 #include "appstate.hpp"
-#include "systemconfig.hpp"
 #ifdef BOARD_TTGO
 #include "rf95.hpp"
 #endif
@@ -208,8 +207,6 @@ void app_main()
   // Must be the first, because we heavily rely
   // on the event system!
   ESP_ERROR_CHECK(esp_event_loop_create_default());
-
-  esp_log_set_vprintf(&beehive_log_override);
 
   I2CHost i2c_bus{0, SDA, SCL};
 
