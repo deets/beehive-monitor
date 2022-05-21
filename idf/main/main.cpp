@@ -12,8 +12,8 @@
 #include "wifi-provisioning.hpp"
 #include "smartconfig.hpp"
 #include "appstate.hpp"
-#ifdef BOARD_TTGO
-#include "rf95.hpp"
+#ifdef USE_LORA
+#include "lora.hpp"
 #endif
 
 #include "mqtt_client.h"
@@ -214,6 +214,15 @@ void app_main()
   Display display(i2c_bus);
   #endif
 
+  #ifdef USE_LORA
+  beehive::lora::LoRaLink lora;
+  while(true)
+  {
+    lora.send(nullptr, 10);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+    ESP_LOGE("main", "send");
+  }
+  #endif
   // must be early because it initialises NVS
   beehive::appstate::init();
   beehive::iobuttons::setup();

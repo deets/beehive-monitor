@@ -1,5 +1,7 @@
 // Copyright: 2022, Diez B. Roggisch, Berlin, all rights reserved
+#ifdef USE_LORA
 #include "lora.hpp"
+#include "pins.hpp"
 
 #include "esp_mac.h"
 
@@ -18,4 +20,17 @@ bool is_field_device()
   return LORA_SENDER_MAC == mac;
 }
 
+LoRaLink::LoRaLink()
+  : _lora(VSPI_HOST, LORA_CS, LORA_SCLK, LORA_MOSI, LORA_MISO, LORA_SPI_SPEED)
+{
 }
+
+void LoRaLink::send(const uint8_t *buffer, size_t len)
+{
+  _lora.send(buffer, len);
+}
+
+} // namespace beehive::lora
+
+
+#endif // USE_LORA
