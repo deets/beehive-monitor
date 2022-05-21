@@ -96,11 +96,15 @@ SDCardWriter::SDCardWriter()
         .mosi_io_num = SDCARD_MOSI,
         .miso_io_num = SDCARD_MISO,
         .sclk_io_num = SDCARD_CLK,
-        .quadwp_io_num = -1,
-        .quadhd_io_num = -1,
-        .max_transfer_sz = 4000,
-	.flags = 0,
-	.intr_flags = 0,
+        -1, // quadwp_io_num
+        -1, // quadhd_io_num
+        -1, // data4_io_num
+        -1, // data5_io_num
+        -1, // data6_io_num
+        -1, // data7_io_num
+        4000,
+        0, // flags
+        0 // intr_flags
     };
     ret = spi_bus_initialize(spi_host_device_t(_host.slot), &bus_cfg, SPI_DMA_CHAN);
     if (ret != ESP_OK) {
