@@ -21,13 +21,13 @@ bool is_field_device()
 }
 
 LoRaLink::LoRaLink()
-  : _lora(VSPI_HOST, LORA_CS, LORA_SCLK, LORA_MOSI, LORA_MISO, LORA_SPI_SPEED)
+  : _lora(VSPI_HOST, LORA_CS, LORA_SCLK, LORA_MOSI, LORA_MISO, LORA_SPI_SPEED, LORA_DI0)
 {
 }
 
 void LoRaLink::send(const uint8_t *buffer, size_t len)
 {
-  _lora.send(buffer, len);
+  _lora.send(buffer, len, 1000);
 }
 
 } // namespace beehive::lora

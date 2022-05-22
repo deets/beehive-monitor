@@ -216,11 +216,16 @@ void app_main()
 
   #ifdef USE_LORA
   beehive::lora::LoRaLink lora;
+  std::array<uint8_t, 256> data;
   while(true)
   {
-    lora.send(nullptr, 10);
-    vTaskDelay(100 / portTICK_PERIOD_MS);
-    ESP_LOGE("main", "send");
+    for(size_t i=1; i < 127; ++i)
+    {
+      std::memset(data.data(), i, i);
+      ESP_LOGI("main", "sending %d bytes", i);
+      lora.send(data.data(), i);
+      vTaskDelay(10 / portTICK_PERIOD_MS);
+    }
   }
   #endif
   // must be early because it initialises NVS

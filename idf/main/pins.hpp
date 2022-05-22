@@ -39,7 +39,7 @@
 #define LORA_MOSI gpio_num_t(27)
 #define LORA_SCLK gpio_num_t(5)
 #define LORA_CS gpio_num_t(18)
-#define LORA_DIO gpio_num_t(26)
+#define LORA_DI0 gpio_num_t(26)
 #define LORA_RST gpio_num_t(23)
 #define LORA_MISO gpio_num_t(19)
 #define LORA_SPI_SPEED 2000000
