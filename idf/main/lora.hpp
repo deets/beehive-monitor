@@ -14,8 +14,12 @@ bool is_field_device();
 class LoRaLink
 {
 public:
+  static constexpr int FIFO_SIZE = RF95::FIFO_SIZE;
+
   LoRaLink();
   void send(const uint8_t* buffer, size_t len);
+  size_t recv(std::array<uint8_t, FIFO_SIZE>&);
+  bool channel_active();
 
 private:
   RF95 _lora;

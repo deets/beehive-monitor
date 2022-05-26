@@ -20,14 +20,27 @@ bool is_field_device()
   return LORA_SENDER_MAC == mac;
 }
 
+
 LoRaLink::LoRaLink()
   : _lora(VSPI_HOST, LORA_CS, LORA_SCLK, LORA_MOSI, LORA_MISO, LORA_SPI_SPEED, LORA_DI0)
 {
 }
 
+
 void LoRaLink::send(const uint8_t *buffer, size_t len)
 {
   _lora.send(buffer, len, 1000);
+}
+
+size_t LoRaLink::recv(std::array<uint8_t, FIFO_SIZE>& buffer)
+{
+  return _lora.recv(buffer);
+}
+
+
+bool LoRaLink::channel_active()
+{
+  return _lora.channel_active();
 }
 
 } // namespace beehive::lora

@@ -216,15 +216,24 @@ void app_main()
 
   #ifdef USE_LORA
   beehive::lora::LoRaLink lora;
-  std::array<uint8_t, 256> data;
   while(true)
   {
-    for(size_t i=1; i < 127; ++i)
+    std::array<uint8_t, 255> data;
+    if(beehive::lora::is_field_device())
     {
-      std::memset(data.data(), i, i);
-      ESP_LOGI("main", "sending %d bytes", i);
-      lora.send(data.data(), i);
-      vTaskDelay(10 / portTICK_PERIOD_MS);
+      for(size_t i=1; i < 127; ++i)
+      {
+        std::memset(data.data(), i, i);
+        ESP_LOGI("main", "sending %d bytes", i);
+        lora.send(data.data(), i);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+      }
+    }
+    else
+    {
+      const auto len = lora.recv(data);
+      ESP_LOGI("main", "received %d bytes", len);
+      ESP_LOG_BUFFER_HEXDUMP(TAG, data.data(), len, ESP_LOG_INFO);
     }
   }
   #endif
