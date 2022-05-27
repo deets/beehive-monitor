@@ -11,8 +11,6 @@ set(srcs
   appstate.cpp
   ota.hpp
   ota.cpp
-  io-buttons.hpp
-  io-buttons.cpp
   sensors.hpp
   sensors.cpp
   roland.hpp

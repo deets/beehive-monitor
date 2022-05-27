@@ -1,7 +1,7 @@
 // Copyright: 2021, Diez B. Roggisch, Berlin, all rights reserved
 
 #include "beehive_events.hpp"
-#include "io-buttons.hpp"
+#include <buttons.hpp>
 
 #include <cstring>
 #include <optional>
@@ -12,7 +12,6 @@ extern "C" {
 
 ESP_EVENT_DEFINE_BASE(CONFIG_EVENTS);
 ESP_EVENT_DEFINE_BASE(SENSOR_EVENTS);
-ESP_EVENT_DEFINE_BASE(BUTTON_EVENTS);
 ESP_EVENT_DEFINE_BASE(SDCARD_EVENTS);
 // Needs the BEEHIVE_ because MQTT_EVENTS is from the system
 ESP_EVENT_DEFINE_BASE(BEEHIVE_MQTT_EVENTS);
@@ -53,7 +52,11 @@ namespace buttons {
 void register_button_callback(button_events_t e,
                               std::function<void(button_events_t)> cb)
 {
-  beehive::iobuttons::register_button_callback(e, cb);
+  deets::buttons::register_button_callback(gpio_num_t(e),
+                                           [cb](gpio_num_t num)
+                                           {
+                                             cb(button_events_t(num));
+                                           });
 }
 
 } // namespace buttons

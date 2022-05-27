@@ -2,10 +2,12 @@
 
 #pragma once
 #ifdef USE_LORA
-#include <array>
-#include <cinttypes>
 
 #include "rf95.hpp"
+#include "beehive_events.hpp"
+
+#include <array>
+#include <cinttypes>
 
 namespace beehive::lora {
 
@@ -14,16 +16,19 @@ bool is_field_device();
 class LoRaLink
 {
 public:
-  static constexpr int FIFO_SIZE = RF95::FIFO_SIZE;
-
   LoRaLink();
-  void send(const uint8_t* buffer, size_t len);
-  size_t recv(std::array<uint8_t, FIFO_SIZE>&);
-  bool channel_active();
+
+  void setup_field_work(size_t sequence_num);
 
 private:
+
+  static void s_sensor_event_handler(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);
+  void sensor_event_handler(esp_event_base_t base, beehive::events::sensors::sensor_events_t id, void* event_data);
+
   RF95 _lora;
+  size_t _sequence_num;
+
 };
 
 } // namespace beehive::lora
-#endif
+#endif // USE_LORA

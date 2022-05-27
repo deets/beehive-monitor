@@ -1,7 +1,7 @@
 #include "freertos/projdefs.h"
 #include "i2c.hh"
 #include "display.hpp"
-#include "io-buttons.hpp"
+#include "buttons.hpp"
 #include "wifi.hpp"
 #include "mqtt.hpp"
 #include "sensors.hpp"
@@ -53,6 +53,7 @@ void sensor_task(void* user_pointer)
 
   while(true)
   {
+    ESP_LOGE(TAG, "sensors work");
     sensors.work();
     vTaskDelay((std::chrono::seconds(beehive::appstate::sleeptime()) / 1ms) / portTICK_PERIOD_MS);
   }
@@ -109,7 +110,7 @@ void print_time()
 
 bool stay_awake()
 {
-  const auto mode = beehive::iobuttons::mode_on();
+  const auto mode = true; //beehive::iobuttons::mode_on();
   const auto res = s_caffeine || mode;
   print_time();
   ESP_LOGI(
@@ -121,8 +122,54 @@ bool stay_awake()
   return res;
 }
 
-void mainloop()
+
+void start_ntp_service()
 {
+  ESP_LOGI(TAG, "Acquire time using NTP");
+  sntp_setoperatingmode(SNTP_OPMODE_POLL);
+  sntp_setservername(0, beehive::appstate::ntp_server());
+  sntp_init();
+  for(int i=0; i < NTP_TIMEOUT; ++i)
+  {
+    if(sntp_get_sync_status() == SNTP_SYNC_STATUS_COMPLETED)
+    {
+      return;
+    }
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+  }
+  ESP_LOGE(TAG, "Couldn't obtain NTP date!");
+}
+
+void start_mdns_service()
+{
+    //initialize mDNS service
+    esp_err_t err = mdns_init();
+    if (err) {
+        printf("MDNS Init failed: %d\n", err);
+        return;
+    }
+
+    //set hostname
+    mdns_hostname_set(beehive::appstate::system_name().c_str());
+    mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
+    std::stringstream ss;
+    ss << beehive::appstate::system_name() << " webserver";
+    mdns_service_instance_name_set("_http", "_tcp", ss.str().c_str());
+}
+
+
+void setup_sensor_task(I2CHost& i2c_bus)
+{
+  // it seems if I don't bind this to core 0, the i2c
+  // subsystem fails randomly.
+  xTaskCreatePinnedToCore(sensor_task, "sensor", 8192, &i2c_bus, uxTaskPriorityGet(NULL), NULL, 0);
+}
+
+
+void wait_or_sleep()
+{
+  beehive::appstate::promote_configuration();
+
   while(true)
   {
     while(stay_awake())
@@ -164,45 +211,82 @@ void mainloop()
   }
 }
 
-void start_ntp_service()
+
+void setup_buttons()
 {
-  ESP_LOGI(TAG, "Acquire time using NTP");
-  sntp_setoperatingmode(SNTP_OPMODE_POLL);
-  sntp_setservername(0, beehive::appstate::ntp_server());
-  sntp_init();
-  for(int i=0; i < NTP_TIMEOUT; ++i)
-  {
-    if(sntp_get_sync_status() == SNTP_SYNC_STATUS_COMPLETED)
+  deets::buttons::setup_pin(
     {
-      return;
+      PIN_NUM_OTA,
+      deets::buttons::pull_e::UP,
+      deets::buttons::irq_e::NEG,
+      2000,
+      std::monostate{}
     }
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-  }
-  ESP_LOGE(TAG, "Couldn't obtain NTP date!");
+    );
+
+  beehive::events::buttons::register_button_callback(
+    beehive::events::buttons::OTA,
+    [](beehive::events::buttons::button_events_t) {
+      s_caffeine = true;
+      if(deets::wifi::connected())
+      {
+        ESP_LOGI(TAG, "Connected to WIFI, run OTA");
+        start_ota_task();
+      }
+      else
+      {
+        ESP_LOGI(TAG, "Not connected to WIFI, running smartconfig");
+        beehive::smartconfig::run();
+      }
+    }
+    );
 }
 
-void start_mdns_service()
+#ifdef USE_LORA
+void run_over_lora(I2CHost &i2c_bus)
 {
-    //initialize mDNS service
-    esp_err_t err = mdns_init();
-    if (err) {
-        printf("MDNS Init failed: %d\n", err);
-        return;
-    }
-
-    //set hostname
-    mdns_hostname_set(beehive::appstate::system_name().c_str());
-    mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
-    std::stringstream ss;
-    ss << beehive::appstate::system_name() << " webserver";
-    mdns_service_instance_name_set("_http", "_tcp", ss.str().c_str());
+  beehive::lora::LoRaLink lora;
+  if(beehive::lora::is_field_device())
+  {
+    sdcard::SDCardWriter sdcard_writer;
+    beehive::http::HTTPServer http_server([&sdcard_writer]() { return sdcard_writer.file_count();});
+    setup_sensor_task(i2c_bus);
+    lora.setup_field_work(sdcard_writer.total_datasets_written());
+    // The whole system is now event driven, whenever the
+    // sensor task does anything
+    wait_or_sleep();
+  }
+  else
+  {
+  }
 }
+
+#else // USE_LORA
+
+void run_over_wifi(I2CHost& i2c_bus)
+{
+  sdcard::SDCardWriter sdcard_writer;
+  // We pass the total_datasets_written as sequence number to start
+  // from
+  mqtt::MQTTClient mqtt_client(sdcard_writer.total_datasets_written());
+
+  beehive::http::HTTPServer http_server([&sdcard_writer]() { return sdcard_writer.file_count();});
+
+  setup_sensor_task(i2c_bus);
+  wait_or_sleep();
+}
+
+#endif // USE_LORA
 
 } // end ns anon
 
 void app_main()
 {
   esp_log_level_set("mqtt", ESP_LOG_DEBUG);
+  esp_log_level_set("lora", ESP_LOG_DEBUG);
+  esp_log_level_set("sensors", ESP_LOG_DEBUG);
+  esp_log_level_set("buttons", ESP_LOG_DEBUG);
+  esp_log_level_set("rf95", ESP_LOG_DEBUG);
 
   // Must be the first, because we heavily rely
   // on the event system!
@@ -214,56 +298,9 @@ void app_main()
   Display display(i2c_bus);
   #endif
 
-  #ifdef USE_LORA
-  beehive::lora::LoRaLink lora;
-  while(true)
-  {
-    std::array<uint8_t, 255> data;
-    if(beehive::lora::is_field_device())
-    {
-      for(size_t i=1; i < 127; ++i)
-      {
-        std::memset(data.data(), i, i);
-        ESP_LOGI("main", "sending %d bytes", i);
-        lora.send(data.data(), i);
-        vTaskDelay(100 / portTICK_PERIOD_MS);
-      }
-    }
-    else
-    {
-      const auto len = lora.recv(data);
-      ESP_LOGI("main", "received %d bytes", len);
-      ESP_LOG_BUFFER_HEXDUMP(TAG, data.data(), len, ESP_LOG_INFO);
-    }
-  }
-  #endif
   // must be early because it initialises NVS
   beehive::appstate::init();
-  beehive::iobuttons::setup();
-
-  beehive::events::buttons::register_button_callback(
-    beehive::events::buttons::OTA,
-    [](beehive::events::buttons::button_events_t) {
-      s_caffeine = true;
-      if(deets::wifi::connected())
-      {
-	ESP_LOGI(TAG, "Connected to WIFI, run OTA");
-	start_ota_task();
-      }
-      else
-      {
-	ESP_LOGI(TAG, "Not connected to WIFI, running smartconfig");
-	beehive::smartconfig::run();
-      }
-    }
-    );
-
-  beehive::events::buttons::register_button_callback(
-    beehive::events::buttons::MODE,
-    [](beehive::events::buttons::button_events_t) {
-      ESP_LOGI(TAG, "MODE switch: %s", (beehive::iobuttons::mode_on() ? "ON" : "OFF"));
-    }
-    );
+  setup_buttons();
 
   // we first need to setup wifi, because otherwise
   // MQTT fails due to missing network stack initialisation!
@@ -271,20 +308,9 @@ void app_main()
   start_mdns_service();
   start_ntp_service();
 
-  sdcard::SDCardWriter sdcard_writer;
-  // We pass the total_datasets_written as sequence number to start
-  // from
-  mqtt::MQTTClient mqtt_client(sdcard_writer.total_datasets_written());
-
-  beehive::http::HTTPServer http_server([&sdcard_writer]() { return sdcard_writer.file_count();});
-
-  // right before we go into our mainloop
-  // we need to broadcast our configured state.
-  beehive::appstate::promote_configuration();
-
-  // it seems if I don't bind this to core 0, the i2c
-  // subsystem fails randomly.
-  xTaskCreatePinnedToCore(sensor_task, "sensor", 8192, &i2c_bus, uxTaskPriorityGet(NULL), NULL, 0);
-
-  mainloop();
+  #ifdef USE_LORA
+  run_over_lora(i2c_bus);
+  #else
+  run_over_wifi(i2c_bus);
+  #endif
 }
