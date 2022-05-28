@@ -56,9 +56,16 @@ class Display {
   };
 
 #ifdef USE_LORA
-  struct lora_info_t
+  struct lora_info_t : event_listener_base_t
   {
+    lora_info_t();
+    void event_handler(esp_event_base_t event_base,
+                       int32_t event_id, void* event_data) override;
+
     void show(Display&);
+
+    size_t package_count = 0;
+    size_t malformed_package_count = 0;
   };
 #endif
 

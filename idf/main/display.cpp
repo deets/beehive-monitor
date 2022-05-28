@@ -106,6 +106,20 @@ void Display::wifi_info_t::show(Display& display)
 }
 
 #ifdef USE_LORA
+Display::lora_info_t::lora_info_t() : Display::event_listener_base_t{{LORA_EVENTS}} {}
+
+void Display::lora_info_t::event_handler(esp_event_base_t event_base,
+                                           int32_t event_id, void *event_data)
+{
+  using namespace beehive::events::lora;
+  const auto stats = receive_stats(lora_events_t(event_id), event_data);
+  if(stats)
+  {
+    package_count = stats->package_count;
+    malformed_package_count = stats->malformed_package_count;
+  }
+}
+
 void Display::lora_info_t::show(Display& display)
 {
   auto y = NORMAL.size + 1;
@@ -114,6 +128,18 @@ void Display::lora_info_t::show(Display& display)
   auto x = 4;
   x += display.font_render(NORMAL, "Role: ", x, y);
   display.font_render(NORMAL, beehive::lora::is_field_device() ? "FIELD" : "BASE", x, y);
+
+  y += 4 + NORMAL.size;
+  x = 4;
+  x += display.font_render(NORMAL, "Packages: ", x, y);
+  display.font_render(NORMAL, package_count, x, y);
+  if(!beehive::lora::is_field_device())
+  {
+    y += 4 + NORMAL.size;
+    x = 4;
+    x += display.font_render(NORMAL, "Malformed: ", x, y);
+    display.font_render(NORMAL, malformed_package_count, x, y);
+  }
 }
 #endif
 
@@ -255,7 +281,8 @@ void Display::system_info_t::show(Display &display)
   y += 4 + NORMAL.size;
   x = 4;
   x += display.font_render(NORMAL, "Time: ", x, y);
-  display.font_render(NORMAL, time.c_str(), x, y);
+  x += display.font_render(NORMAL, time.c_str(), x, y);
+  x += display.font_render(NORMAL, " UTC", x, y);
 }
 
 Display::Display(I2CHost &bus)
@@ -349,7 +376,19 @@ void Display::progress_state()
       _state = SENSORS;
       break;
     case SENSORS:
+#ifdef USE_LORA
+      // The field device doesn't send MQTT
+      if(beehive::lora::is_field_device())
+      {
+        _state = START;
+      }
+      else
+      {
+        _state = MQTT;
+      }
+#else
       _state = MQTT;
+#endif
       break;
     case MQTT:
       _state = START;
@@ -394,7 +433,7 @@ uint8_t Display::u8g2_esp32_i2c_byte_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_i
     _bus.write_buffer_to_address(0x3c, _i2c_buffer.data(), _i2c_buffer.size());
     break;
   default:
-    ESP_LOGE(TAG, "u8g2_cb: msg%i, arg_int=%i, arg_ptr=%p", msg, arg_int, arg_ptr);
+    ESP_LOGD(TAG, "u8g2_cb: msg%i, arg_int=%i, arg_ptr=%p", msg, arg_int, arg_ptr);
     break;
   }
   return 1;

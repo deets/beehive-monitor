@@ -82,6 +82,8 @@ void LoRaLink::sensor_event_handler(
       data[offset++] = reading.raw_temperature >> 8;
     }
     _lora.send(data.data(), offset, 10000);
+    ++_package_count;
+    beehive::events::lora::send_stats(_package_count, _malformed_package_count);
   }
 }
 
