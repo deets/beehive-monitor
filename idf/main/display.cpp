@@ -362,7 +362,15 @@ void Display::progress_state()
       _state = LORA;
       break;
     case LORA:
-      _state = SDCARD;
+      // The base has no SD Card attached.
+      if(beehive::lora::is_field_device())
+      {
+        _state = SDCARD;
+      }
+      else
+      {
+        _state = SYSTEM;
+      }
       break;
 #else
     case WIFI:

@@ -8,6 +8,13 @@
 
 #include <array>
 #include <cinttypes>
+#include <memory>
+
+namespace beehive::mqtt {
+
+class MQTTClient;
+
+};
 
 namespace beehive::lora {
 
@@ -17,6 +24,7 @@ class LoRaLink
 {
 public:
   LoRaLink();
+  virtual ~LoRaLink();
 
   void setup_field_work(size_t sequence_num);
   void run_base_work();
@@ -30,6 +38,8 @@ private:
   size_t _sequence_num = 0;
   size_t _package_count = 0;
   size_t _malformed_package_count = 0;
+
+  std::unique_ptr<beehive::mqtt::MQTTClient> _mqtt;
 };
 
 } // namespace beehive::lora

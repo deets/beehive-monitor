@@ -4,6 +4,7 @@
 #include "pins.hpp"
 #include "beehive_events.hpp"
 #include "sht3xdis.hpp"
+#include "mqtt.hpp"
 
 #include "esp_mac.h"
 
@@ -33,6 +34,11 @@ LoRaLink::LoRaLink()
 {
   // Set our own custom syncword (BEeehive)
   _lora.sync_word(0xBE);
+}
+
+
+LoRaLink::~LoRaLink()
+{
 }
 
 
@@ -125,7 +131,7 @@ void LoRaLink::run_base_work()
         sno |= data[i] << i;
       }
       _sequence_num = sno;
-      const auto running_number = data[4];
+      //const auto running_number = data[4];
       const auto readings_count = data[5];
       size_t base_offset = 6;
       std::vector<sht3xdis_value_t> readings(readings_count);
@@ -142,7 +148,11 @@ void LoRaLink::run_base_work()
         readings[i] = reading;
       }
       ESP_LOGI(TAG, "Received sensor readings, s-no: %d, readings: %d", _sequence_num, readings_count);
-
+      if(!_mqtt)
+      {
+        _mqtt = std::unique_ptr<beehive::mqtt::MQTTClient>(new beehive::mqtt::MQTTClient(_sequence_num));
+      }
+      beehive::events::sensors::send_readings(readings);
     }
     else
     {

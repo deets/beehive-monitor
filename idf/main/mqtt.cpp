@@ -61,7 +61,8 @@ MQTTClient::MQTTClient(size_t counter)
   std::strncpy(_client_id, beehive::appstate::system_name().c_str(), sizeof(_client_id));
   // we *must* give a host, otherwise the
   // next call bails out.
-  std::strncpy(_hostname, "127.0.0.1", sizeof(_hostname));
+  std::strncpy(_hostname, beehive::appstate::mqtt_host().c_str(), sizeof(_hostname));
+  ESP_LOGD(TAG, "MQTT client-id %s, connecting to host %s", _client_id, _hostname);
   _config.client_id = _client_id;
   _config.host = _hostname;
   _client = esp_mqtt_client_init(&_config);
@@ -153,14 +154,14 @@ void MQTTClient::config_event_handler(esp_event_base_t base, beehive::events::co
       if(hostname)
       {
 	std::strncpy(_hostname, hostname->c_str(), sizeof(_hostname));
-	ESP_LOGD(TAG, "MQTT_HOST: %s", _hostname);
+	ESP_LOGD(TAG, "Configuration changed - MQTT_HOST: %s", _hostname);
 	esp_mqtt_set_config(_client, &_config);
       }
     }
     break;
   case beehive::events::config::SYSTEM_NAME:
     std::strncpy(_client_id, beehive::appstate::system_name().c_str(), sizeof(_client_id));
-    ESP_LOGD(TAG, "MQTT_CLIENT_ID: %s", _client_id);
+    ESP_LOGD(TAG, "Configuration changed - MQTT_CLIENT_ID: %s", _client_id);
     // It appears as if this re-setting of the client id does only take effect
     // after a reboot. I'm ok with this as in normal operation, we'd do that through
     // deep sleep anyway.
