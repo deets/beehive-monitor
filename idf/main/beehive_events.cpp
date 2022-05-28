@@ -13,6 +13,7 @@ extern "C" {
 ESP_EVENT_DEFINE_BASE(CONFIG_EVENTS);
 ESP_EVENT_DEFINE_BASE(SENSOR_EVENTS);
 ESP_EVENT_DEFINE_BASE(SDCARD_EVENTS);
+ESP_EVENT_DEFINE_BASE(LORA_EVENTS);
 // Needs the BEEHIVE_ because MQTT_EVENTS is from the system
 ESP_EVENT_DEFINE_BASE(BEEHIVE_MQTT_EVENTS);
 
@@ -144,5 +145,29 @@ std::optional<std::string> hostname(config_events_t kind, void* event_data)
 } // namespace mqtt
 
 } // namespace config
+
+namespace lora {
+
+std::optional<lora_stats_t> receive_stats(lora_events_t kind, void *event_data)
+{
+  switch(kind)
+  {
+  case STATS:
+    {
+      const auto p = (lora_stats_t*)event_data;
+      return *p;
+    }
+    break;
+  default:
+    return std::nullopt;
+  }
+}
+
+void send_stats(size_t package_count, size_t malformed_package_count) {
+  lora_stats_t stats = { package_count, malformed_package_count };
+  esp_event_post(LORA_EVENTS, STATS, (void*)&stats, sizeof(stats), 0);
+}
+
+} // namespace lora
 
 } // namespace beehive::events

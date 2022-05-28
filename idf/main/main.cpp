@@ -253,11 +253,12 @@ void run_over_lora(I2CHost &i2c_bus)
     setup_sensor_task(i2c_bus);
     lora.setup_field_work(sdcard_writer.total_datasets_written());
     // The whole system is now event driven, whenever the
-    // sensor task does anything
+    // sensor task does anything, we produce a LoRa message.
     wait_or_sleep();
   }
   else
   {
+    lora.run_base_work();
   }
 }
 

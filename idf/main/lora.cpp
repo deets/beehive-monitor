@@ -3,6 +3,7 @@
 #include "lora.hpp"
 #include "pins.hpp"
 #include "beehive_events.hpp"
+#include "sht3xdis.hpp"
 
 #include "esp_mac.h"
 
@@ -70,6 +71,7 @@ void LoRaLink::sensor_event_handler(
     std::copy(&_sequence_num, &_sequence_num + sizeof(_sequence_num), data.data() + offset);
     offset += sizeof(_sequence_num);
     data[offset++] = 1; // Running number
+    data[offset++] = readings->size();
     for(const auto& reading : *readings)
     {
       data[offset++] = reading.busno;
@@ -83,6 +85,71 @@ void LoRaLink::sensor_event_handler(
   }
 }
 
+void LoRaLink::run_base_work()
+{
+  using namespace beehive::events::sensors;
+  using namespace sht3xdis;
+
+  while(true)
+  {
+    std::array<uint8_t, RF95::FIFO_SIZE> data;
+    const auto bytes_received = _lora.recv(data);
+
+    // No bytes means stray package or something similar
+    if(bytes_received == 0)
+    {
+      continue;
+    }
+    ++_package_count;
+    // Sanity check our packet
+    auto valid = false;
+    if(bytes_received >= 6)
+    {
+      const auto readings_count = data[5];
+      // 6 bytes preamble with seq_no, running no and then
+      // 6 bytes per reading
+      valid = bytes_received == 6 + 6 * readings_count;
+    }
+
+    if(valid)
+    {
+      // I can't use the following, but have to do this using the
+      // awkward for loop. If not the CPU pukes with some memory
+      // alignment issue.
+      //std::copy(data.data(), data.data() + sizeof(_sequence_num), &_sequence_num);
+      size_t sno = 0;
+      for(size_t i=0; i < 4; ++i)
+      {
+        sno |= data[i] << i;
+      }
+      _sequence_num = sno;
+      const auto running_number = data[4];
+      const auto readings_count = data[5];
+      size_t base_offset = 6;
+      std::vector<sht3xdis_value_t> readings(readings_count);
+      for(size_t i=0; i < readings_count; ++i)
+      {
+        const auto offset = base_offset + i * 6;
+        sht3xdis_value_t reading;
+        reading.busno = data[offset];
+        reading.address = data[offset + 1];
+        reading.raw_humidity = data[offset + 2] | (data[offset + 3] << 8);
+        reading.raw_temperature = data[offset + 4] | (data[offset + 5] << 8);
+        reading.humidity = SHT3XDIS::raw2humidity(reading.raw_humidity);
+        reading.temperature = SHT3XDIS::raw2humidity(reading.raw_temperature);
+        readings[i] = reading;
+      }
+      ESP_LOGI(TAG, "Received sensor readings, s-no: %d, readings: %d", _sequence_num, readings_count);
+
+    }
+    else
+    {
+      ++_malformed_package_count;
+      ESP_LOGE(TAG, "Received malformed package no %d, bytes received: %d", _malformed_package_count, bytes_received);
+    }
+    beehive::events::lora::send_stats(_package_count, _malformed_package_count);
+  }
+}
 
 } // namespace beehive::lora
 

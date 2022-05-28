@@ -19,6 +19,7 @@ public:
   LoRaLink();
 
   void setup_field_work(size_t sequence_num);
+  void run_base_work();
 
 private:
 
@@ -26,8 +27,9 @@ private:
   void sensor_event_handler(esp_event_base_t base, beehive::events::sensors::sensor_events_t id, void* event_data);
 
   RF95 _lora;
-  size_t _sequence_num;
-
+  size_t _sequence_num = 0;
+  size_t _package_count = 0;
+  size_t _malformed_package_count = 0;
 };
 
 } // namespace beehive::lora

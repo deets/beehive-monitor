@@ -18,6 +18,7 @@ extern "C" {
   ESP_EVENT_DECLARE_BASE(SENSOR_EVENTS);
   ESP_EVENT_DECLARE_BASE(BUTTON_EVENTS);
   ESP_EVENT_DECLARE_BASE(SDCARD_EVENTS);
+  ESP_EVENT_DECLARE_BASE(LORA_EVENTS);
   ESP_EVENT_DECLARE_BASE(BEEHIVE_MQTT_EVENTS);
 
 #ifdef __cplusplus
@@ -25,6 +26,24 @@ extern "C" {
 #endif
 
 namespace beehive::events {
+
+namespace lora {
+
+enum lora_events_t
+{
+  STATS,
+};
+
+struct lora_stats_t
+{
+  size_t package_count;
+  size_t malformed_package_count;
+};
+
+void send_stats(size_t package_count, size_t malformed_package_count);
+std::optional<lora_stats_t> receive_stats(lora_events_t, void *event_data);
+
+} // namespace lora
 
 namespace buttons {
 
@@ -101,5 +120,6 @@ void hostname(const char *hostname);
 std::optional<std::string> hostname(config_events_t, void* event_data);
 
 } // namespace mqtt
+
 } // namespace config
 } // namespace beehive::events::config
