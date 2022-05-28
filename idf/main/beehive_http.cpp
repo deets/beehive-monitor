@@ -48,6 +48,13 @@ HTTPServer::HTTPServer(std::function<size_t()> file_count)
 	const auto sleeptime = body["sleeptime"].get<uint32_t>();
 	beehive::appstate::set_sleeptime(sleeptime);
       }
+#ifdef USE_LORA
+      if(body.contains("lora_dbm") && body["lora_dbm"].is_number())
+      {
+	const auto lora_dbm = body["lora_dbm"].get<uint32_t>();
+	beehive::appstate::set_lora_dbm(lora_dbm);
+      }
+#endif // USE_LORA
 
       json j2 = {
 	{"status", "ok"}
@@ -59,6 +66,9 @@ HTTPServer::HTTPServer(std::function<size_t()> file_count)
     "/configuration", HTTP_GET,
     [](const json& body) -> json {
       json j2 = {
+#ifdef USE_LORA
+	{"lora_dbm", beehive::appstate::lora_dbm()},
+#endif // USE_LORA
 	{"sleeptime", beehive::appstate::sleeptime()},
 	{"system_name", beehive::appstate::system_name()},
 	{"app_version", beehive::appstate::version()},

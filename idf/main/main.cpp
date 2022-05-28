@@ -53,7 +53,7 @@ void sensor_task(void* user_pointer)
 
   while(true)
   {
-    ESP_LOGE(TAG, "sensors work");
+
     sensors.work();
     vTaskDelay((std::chrono::seconds(beehive::appstate::sleeptime()) / 1ms) / portTICK_PERIOD_MS);
   }
@@ -148,12 +148,23 @@ void start_mdns_service()
         printf("MDNS Init failed: %d\n", err);
         return;
     }
+    static std::string mdns_system_name = beehive::appstate::system_name();
+    #ifdef USE_LORA
+    if(beehive::lora::is_field_device())
+    {
+      mdns_system_name += "-field";
+    }
+    else
+    {
+      mdns_system_name += "-base";
+    }
+    #endif
 
     //set hostname
-    mdns_hostname_set(beehive::appstate::system_name().c_str());
+    mdns_hostname_set(mdns_system_name.c_str());
     mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
     std::stringstream ss;
-    ss << beehive::appstate::system_name() << " webserver";
+    ss << mdns_system_name << " webserver";
     mdns_service_instance_name_set("_http", "_tcp", ss.str().c_str());
 }
 
@@ -258,6 +269,7 @@ void run_over_lora(I2CHost &i2c_bus)
   }
   else
   {
+    beehive::http::HTTPServer http_server([]() { return 0;});
     lora.run_base_work();
   }
 }
@@ -286,7 +298,7 @@ void app_main()
   esp_log_level_set("mqtt", ESP_LOG_DEBUG);
   esp_log_level_set("lora", ESP_LOG_DEBUG);
   esp_log_level_set("sensors", ESP_LOG_DEBUG);
-  esp_log_level_set("buttons", ESP_LOG_DEBUG);
+  // esp_log_level_set("buttons", ESP_LOG_DEBUG);
   esp_log_level_set("rf95", ESP_LOG_DEBUG);
 
   // Must be the first, because we heavily rely

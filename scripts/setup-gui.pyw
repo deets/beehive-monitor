@@ -1,11 +1,18 @@
 # Copyright: 2021, Diez B. Roggisch, Berlin . All rights reserved.
 import tkinter as tk
+import tkinter.ttk as ttk
 import urllib.request
 import threading
 import queue
 import json
 import time
 
+
+TYPE_MAPPING = dict(
+    WIFI="",
+    BASE="-base",
+    FIELD="-field",
+    )
 
 class App:
 
@@ -18,7 +25,16 @@ class App:
         self._system_name.set("beehive")
         system_name = tk.Entry(upper, textvariable=self._system_name)
         system_name.pack(side=tk.LEFT)
-        tk.Label(upper, text=".local").pack(side=tk.RIGHT)
+        tk.Label(upper, text=".local").pack(side=tk.LEFT)
+
+        self._system_type = tk.StringVar()
+        self._system_type.set(list(TYPE_MAPPING.keys())[0])
+        system_type = ttk.Combobox(
+            upper,
+            textvariable=self._system_type, values=list(TYPE_MAPPING.keys())
+        )
+        system_type.pack(side=tk.RIGHT)
+
         self._lower = tk.Frame(root)
         self._lower.pack(side=tk.TOP)
 
@@ -27,6 +43,7 @@ class App:
             mqtt_hostname=(True, tk.StringVar()),
             sleeptime=(True, tk.IntVar()),
             system_name=(True, tk.StringVar()),
+            lora_dbm=(True, tk.IntVar()),
         )
         for row, (name, (editable, var)) in enumerate(self._configuration.items()):
             tk.Label(self._lower, text=f"{name}:").grid(row=row, column=0)
@@ -57,7 +74,8 @@ class App:
     def _url(self):
         # This can be called from the background thread because
         # tk vars are alledgedly thread safe
-        return f"http://{self._system_name.get()}.local/configuration"
+        suffix = TYPE_MAPPING[self._system_type.get()]
+        return f"http://{self._system_name.get()}{suffix}.local/configuration"
 
     def _poll_configuration(self):
         while True:
