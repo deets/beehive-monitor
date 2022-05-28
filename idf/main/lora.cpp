@@ -5,6 +5,7 @@
 #include "beehive_events.hpp"
 #include "sht3xdis.hpp"
 #include "mqtt.hpp"
+#include "appstate.hpp"
 
 #include "esp_mac.h"
 
@@ -30,10 +31,11 @@ bool is_field_device()
 
 
 LoRaLink::LoRaLink()
-  : _lora(VSPI_HOST, LORA_CS, LORA_SCLK, LORA_MOSI, LORA_MISO, LORA_SPI_SPEED, LORA_DI0)
+  : _lora(VSPI_HOST, LORA_CS, LORA_SCLK, LORA_MOSI, LORA_MISO, LORA_SPI_SPEED, LORA_DI0, beehive::appstate::lora_dbm())
 {
   // Set our own custom syncword (BEeehive)
   _lora.sync_word(0xBE);
+  ESP_ERROR_CHECK(esp_event_handler_instance_register(CONFIG_EVENTS, esp_mqtt_event_id_t(ESP_EVENT_ANY_ID), LoRaLink::s_config_event_handler, this, NULL));
 }
 
 
@@ -160,6 +162,29 @@ void LoRaLink::run_base_work()
       ESP_LOGE(TAG, "Received malformed package no %d, bytes received: %d", _malformed_package_count, bytes_received);
     }
     beehive::events::lora::send_stats(_package_count, _malformed_package_count);
+  }
+}
+
+void LoRaLink::s_config_event_handler(void *handler_args,
+                                        esp_event_base_t event_base, int32_t event_id,
+                                        void *event_data)
+{
+  static_cast<LoRaLink*>(handler_args)->config_event_handler(event_base, beehive::events::config::config_events_t(event_id), event_data);
+}
+
+
+void LoRaLink::config_event_handler(esp_event_base_t base, beehive::events::config::config_events_t id, void* event_data)
+{
+  switch(id)
+  {
+  case beehive::events::config::LORA_DBM:
+    _lora.tx_power((int)*(uint32_t*)event_data);
+    break;
+    // All ignored
+  case beehive::events::config::SLEEPTIME:
+  case beehive::events::config::MQTT_HOST:
+  case beehive::events::config::SYSTEM_NAME:
+    break;
   }
 }
 

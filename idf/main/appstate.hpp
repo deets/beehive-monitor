@@ -21,4 +21,8 @@ const char* ntp_server();
 
 std::string version();
 
+#ifdef USE_LORA
+uint32_t lora_dbm();
+void set_lora_dbm(uint32_t);
+#endif
 }

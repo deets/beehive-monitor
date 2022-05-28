@@ -169,6 +169,7 @@ void MQTTClient::config_event_handler(esp_event_base_t base, beehive::events::co
     break;
     // All ignored
   case beehive::events::config::SLEEPTIME:
+  case beehive::events::config::LORA_DBM:
     break;
   }
 }

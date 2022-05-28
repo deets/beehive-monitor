@@ -108,11 +108,13 @@ enum config_events_t
 {
   MQTT_HOST,
   SYSTEM_NAME,
-  SLEEPTIME
+  SLEEPTIME,
+  LORA_DBM,
 };
 
 void system_name(const char *system_name);
 void sleeptime(uint32_t sleeptime);
+void lora_dbm(uint32_t lora_dbm);
 
 namespace mqtt {
 

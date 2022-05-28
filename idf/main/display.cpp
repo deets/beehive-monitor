@@ -133,7 +133,14 @@ void Display::lora_info_t::show(Display& display)
   x = 4;
   x += display.font_render(NORMAL, "Packages: ", x, y);
   display.font_render(NORMAL, package_count, x, y);
-  if(!beehive::lora::is_field_device())
+  if(beehive::lora::is_field_device())
+  {
+    y += 4 + NORMAL.size;
+    x = 4;
+    x += display.font_render(NORMAL, "dbm: ", x, y);
+    display.font_render(NORMAL, beehive::appstate::lora_dbm(), x, y);
+  }
+  else // BASE
   {
     y += 4 + NORMAL.size;
     x = 4;

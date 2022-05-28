@@ -118,6 +118,11 @@ void sleeptime(uint32_t sleeptime)
   esp_event_post(CONFIG_EVENTS, SLEEPTIME, (void*)&sleeptime, sizeof(sleeptime), 0);
 }
 
+void lora_dbm(uint32_t lora_dbm)
+{
+  esp_event_post(CONFIG_EVENTS, LORA_DBM, (void*)&lora_dbm, sizeof(lora_dbm), 0);
+}
+
 namespace mqtt {
 
 void hostname(const char *hostname)

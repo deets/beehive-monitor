@@ -34,6 +34,9 @@ private:
   static void s_sensor_event_handler(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);
   void sensor_event_handler(esp_event_base_t base, beehive::events::sensors::sensor_events_t id, void* event_data);
 
+  static void s_config_event_handler(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);
+  void config_event_handler(esp_event_base_t base, beehive::events::config::config_events_t id, void* event_data);
+
   RF95 _lora;
   size_t _sequence_num = 0;
   size_t _package_count = 0;
