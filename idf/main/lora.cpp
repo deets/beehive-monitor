@@ -30,6 +30,8 @@ bool is_field_device()
 LoRaLink::LoRaLink()
   : _lora(VSPI_HOST, LORA_CS, LORA_SCLK, LORA_MOSI, LORA_MISO, LORA_SPI_SPEED, LORA_DI0)
 {
+  // Set our own custom syncword (BEeehive)
+  _lora.sync_word(0xBE);
 }
 
 
