@@ -8,11 +8,16 @@
 #include <vector>
 
 namespace sht3xdis {
+
 class SHT3XDIS;
-};
+
+} // namespace sht3xdis
 
 class I2C;
 class TCA9548A;
+
+
+namespace beehive::sensors {
 
 class Sensors
 {
@@ -35,3 +40,7 @@ private:
   std::unique_ptr<TCA9548A> _mux;
   std::vector<sensor_t> _sensors;
 };
+
+void setup_sensor_task(I2CHost& bus);
+
+} // namespace beehive::sensors

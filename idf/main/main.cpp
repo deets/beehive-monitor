@@ -45,21 +45,6 @@ const auto NTP_TIMEOUT = 15;
 
 bool s_caffeine = false;
 
-void sensor_task(void* user_pointer)
-{
-  I2CHost* bus = static_cast<I2CHost*>(user_pointer);
-  Sensors sensors(*bus);
-  vTaskDelay(2000 / portTICK_PERIOD_MS);
-
-  while(true)
-  {
-
-    sensors.work();
-    vTaskDelay((std::chrono::seconds(beehive::appstate::sleeptime()) / 1ms) / portTICK_PERIOD_MS);
-  }
-}
-
-
 void sdcard_event_handler(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
   EventGroupHandle_t event_group = static_cast<EventGroupHandle_t>(event_handler_arg);
@@ -169,14 +154,6 @@ void start_mdns_service()
 }
 
 
-void setup_sensor_task(I2CHost& i2c_bus)
-{
-  // it seems if I don't bind this to core 0, the i2c
-  // subsystem fails randomly.
-  xTaskCreatePinnedToCore(sensor_task, "sensor", 8192, &i2c_bus, uxTaskPriorityGet(NULL), NULL, 0);
-}
-
-
 void wait_or_sleep()
 {
   beehive::appstate::promote_configuration();
@@ -261,7 +238,7 @@ void run_over_lora(I2CHost &i2c_bus)
   {
     sdcard::SDCardWriter sdcard_writer;
     beehive::http::HTTPServer http_server([&sdcard_writer]() { return sdcard_writer.file_count();});
-    setup_sensor_task(i2c_bus);
+    beehive::sensors::setup_sensor_task(i2c_bus);
     lora.setup_field_work(sdcard_writer.total_datasets_written());
     // The whole system is now event driven, whenever the
     // sensor task does anything, we produce a LoRa message.
@@ -285,7 +262,7 @@ void run_over_wifi(I2CHost& i2c_bus)
 
   beehive::http::HTTPServer http_server([&sdcard_writer]() { return sdcard_writer.file_count();});
 
-  setup_sensor_task(i2c_bus);
+  beehive::sensors::setup_sensor_task(i2c_bus);
   wait_or_sleep();
 }
 

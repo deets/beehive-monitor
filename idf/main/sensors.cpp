@@ -4,6 +4,7 @@
 #include "beehive_events.hpp"
 #include "esp_timer.h"
 #include "pins.hpp"
+#include "appstate.hpp"
 
 #include "i2c.hh"
 #include "tca9548a.hpp"
@@ -23,7 +24,10 @@
 
 #define TAG "sensors"
 
+namespace beehive::sensors {
+
 namespace {
+
 using namespace std::chrono_literals;
 
 using namespace beehive::events::sensors;
@@ -65,6 +69,21 @@ void fake_sensor_data(std::vector<sht3xdis_value_t>& readings, const std::set<st
 
 #endif // CONFIG_BEEHIVE_FAKE_SENSOR_DATA
 
+
+void sensor_task(void* user_pointer)
+{
+  I2CHost* bus = static_cast<I2CHost*>(user_pointer);
+  Sensors sensors(*bus);
+  vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+  const auto millis = std::chrono::seconds(beehive::appstate::sleeptime()) / 1ms;
+  while(true)
+  {
+    ESP_LOGD(TAG, "Doing sensor work, then sleep for %dms", int(millis));
+    sensors.work();
+    vTaskDelay(millis / portTICK_PERIOD_MS);
+  }
+}
 
 } // namespace
 
@@ -153,3 +172,13 @@ void Sensors::work()
   #endif
   send_readings(readings);
 }
+
+void setup_sensor_task(I2CHost& i2c_bus)
+{
+  // it seems if I don't bind this to core 0, the i2c
+  // subsystem fails randomly.
+  xTaskCreatePinnedToCore(sensor_task, "sensor", 8192, &i2c_bus, uxTaskPriorityGet(NULL), NULL, 0);
+}
+
+
+} // namespace beehive::sensors
