@@ -119,10 +119,14 @@ public:
   int font_render(const font_info_t& font, auto renderable, int x, int y);
   int font_text_width(const font_info_t& font, auto renderable);
   void hline(int x, int x2, int y);
+  void start_task();
+  // should be called every 100ms
+  void work();
 
 private:
   static void s_task(void*);
   void task();
+
   void progress_state();
   float elapsed() const;
 

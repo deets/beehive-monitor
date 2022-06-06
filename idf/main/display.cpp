@@ -11,16 +11,17 @@
 #include <esp_timer.h>
 #include <esp_ota_ops.h>
 #include <esp_event_base.h>
+#include <esp_log.h>
+
+#include <u8g2.h>
 
 #include <initializer_list>
 #include <math.h>
 #include <memory>
 #include <optional>
 #include <type_traits>
-#include <u8g2.h>
+#include <sstream>
 
-//#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
-#include <esp_log.h>
 
 #define TAG "disp"
 
@@ -331,13 +332,17 @@ Display::Display(I2CHost &bus)
   _u8g2->u8x8.user_ptr = this;
   u8g2_InitDisplay(_u8g2.get()); // send init sequence to the display, display is in sleep mode after this,
   u8g2_SetPowerSave(_u8g2.get(), 0); // wake up display
-
-  xTaskCreatePinnedToCore(Display::s_task, "sensor", 8192, this, uxTaskPriorityGet(NULL), NULL, 0);
   u8g2_SetFlipMode(_u8g2.get(), 1);
+  _state_switch_timestamp = esp_timer_get_time() + STATE_SHOW_TIME;
 }
 
 Display::~Display()
 {
+}
+
+void Display::start_task()
+{
+  xTaskCreatePinnedToCore(Display::s_task, "display", 8192, this, uxTaskPriorityGet(NULL), NULL, 0);
 }
 
 void Display::s_task(void* user_data)
@@ -347,10 +352,16 @@ void Display::s_task(void* user_data)
 
 void Display::task()
 {
-  _state_switch_timestamp = esp_timer_get_time() + STATE_SHOW_TIME;
   while(true)
   {
     vTaskDelay(100 / portTICK_PERIOD_MS);
+    work();
+  }
+}
+
+
+void Display::work()
+{
     progress_state();
     clear();
     switch(_state)
@@ -380,8 +391,8 @@ void Display::task()
       break;
     }
     update();
-  }
 }
+
 
 void Display::progress_state()
 {
