@@ -306,6 +306,7 @@ Display::Display(I2CHost &bus)
   u8g2_SetPowerSave(_u8g2.get(), 0); // wake up display
 
   xTaskCreatePinnedToCore(Display::s_task, "sensor", 8192, this, uxTaskPriorityGet(NULL), NULL, 0);
+  u8g2_SetFlipMode(_u8g2.get(), 1);
 }
 
 Display::~Display()
