@@ -78,3 +78,22 @@
    |      0645 |            3 | Two           |
    |      0644 |            4 | Two           |
    |-----------+--------------+---------------|
+
+** JST Header Assignment
+
+Pin one on a male JST header is left if you look from top and the noches are pointing upwards.
+
+See [[file:datasheets/jst-xh-header.png][JST Header]].
+
+This is the pin assigment:
+
+|-----+-----------|
+| Pin | Function  |
+|-----+-----------|
+|   1 | 3V3       |
+|   2 | GND       |
+|   3 | SC Higher |
+|   4 | SD Higher |
+|   5 | SC Lower  |
+|   6 | SD Lower  |
+|-----+-----------|
