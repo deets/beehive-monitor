@@ -24,6 +24,7 @@
 #include <esp_log.h>
 #include <esp_sleep.h>
 #include <esp_sntp.h>
+#include <esp_task_wdt.h>
 #include <mdns.h>
 #include <chrono>
 #include <atomic>
@@ -231,22 +232,46 @@ void setup_buttons()
 }
 
 #ifdef USE_LORA
-void run_over_lora(I2CHost &i2c_bus)
+void run_over_lora(Display& display, I2CHost &i2c_bus)
 {
+  using namespace std::chrono_literals;
+
   beehive::lora::LoRaLink lora;
+
   if(beehive::lora::is_field_device())
   {
     sdcard::SDCardWriter sdcard_writer;
     beehive::http::HTTPServer http_server([&sdcard_writer]() { return sdcard_writer.file_count();});
-    beehive::sensors::setup_sensor_task(i2c_bus);
     lora.setup_field_work(sdcard_writer.total_datasets_written());
-    // The whole system is now event driven, whenever the
-    // sensor task does anything, we produce a LoRa message.
-    wait_or_sleep();
+
+    beehive::sensors::Sensors sensors(i2c_bus);
+
+    auto sensor_time = std::chrono::steady_clock::now() + (beehive::appstate::sleeptime() * 1s);
+
+    esp_task_wdt_add(xTaskGetCurrentTaskHandle());
+
+    while(true)
+    {
+      // This is a bit shitty, but it appears as if only
+      // one task can drive an I2C host. So we drive both
+      // display and sensors explicitly here.
+      vTaskDelay(100 / portTICK_PERIOD_MS);
+      esp_task_wdt_reset();
+      i2c_bus.reset();
+      display.work();
+      if(std::chrono::steady_clock::now() >= sensor_time)
+      {
+        sensors.work();
+        sensor_time += beehive::appstate::sleeptime() * 1s;
+      }
+    }
   }
   else
   {
     beehive::http::HTTPServer http_server([]() { return 0;});
+    // We don't use I2C for anything but the
+    // display, so use its own task.
+    display.start_task();
     lora.run_base_work();
   }
 }
@@ -276,7 +301,8 @@ void app_main()
   esp_log_level_set("lora", ESP_LOG_DEBUG);
   esp_log_level_set("sensors", ESP_LOG_DEBUG);
   // esp_log_level_set("buttons", ESP_LOG_DEBUG);
-  esp_log_level_set("rf95", ESP_LOG_DEBUG);
+  //esp_log_level_set("rf95", ESP_LOG_DEBUG);
+//  esp_log_level_set("i2c", ESP_LOG_DEBUG);
 
   // Must be the first, because we heavily rely
   // on the event system!
@@ -299,8 +325,9 @@ void app_main()
   start_ntp_service();
 
   #ifdef USE_LORA
-  run_over_lora(i2c_bus);
+  run_over_lora(display, i2c_bus);
   #else
+  display.start_task();
   run_over_wifi(i2c_bus);
   #endif
 }
