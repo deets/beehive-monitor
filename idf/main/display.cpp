@@ -24,7 +24,30 @@
 
 #define TAG "disp"
 
+namespace {
 const int64_t STATE_SHOW_TIME = 3000000;
+
+std::string uptime()
+{
+  std::stringstream ss;
+  const auto seconds = esp_timer_get_time() / 1000000;
+  const auto minutes = seconds / 60;
+  const auto hours = minutes / 60;
+  const auto days = hours / 24;
+  if(days)
+  {
+    ss << days << "d";
+  }
+  if(days || hours)
+  {
+    ss << hours % 24 << "h";
+  }
+  ss << minutes % 60 << "m";
+  return ss.str();
+}
+
+}
+
 
 Display::event_listener_base_t::event_listener_base_t(std::initializer_list<esp_event_base_t> bases)
 {
@@ -290,6 +313,10 @@ void Display::system_info_t::show(Display &display)
   x += display.font_render(NORMAL, "Time: ", x, y);
   x += display.font_render(NORMAL, time.c_str(), x, y);
   x += display.font_render(NORMAL, " UTC", x, y);
+  y += 4 + NORMAL.size;
+  x = 4;
+  x += display.font_render(NORMAL, "Uptime: ", x, y);
+  x += display.font_render(NORMAL, uptime(), x, y);
 }
 
 Display::Display(I2CHost &bus)
@@ -465,6 +492,10 @@ int Display::font_render(const font_info_t& font, auto value, int x, int y)
   if constexpr (std::is_same_v<ArgT, char*> || std::is_same_v<ArgT, const char*>)
   {
     return u8g2_DrawStr(_u8g2.get(), x, y + font.y_adjust, value);
+  }
+  else if constexpr (std::is_same_v<ArgT, std::string>)
+  {
+    return u8g2_DrawStr(_u8g2.get(), x, y + font.y_adjust, value.c_str());
   }
   else if constexpr (std::is_same_v<ArgT, size_t>)
   {
