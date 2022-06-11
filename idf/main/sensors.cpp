@@ -5,6 +5,7 @@
 #include "esp_timer.h"
 #include "pins.hpp"
 #include "appstate.hpp"
+#include "util.hpp"
 
 #include "i2c.hh"
 #include "tca9548a.hpp"
@@ -23,6 +24,7 @@
 #include <esp_log.h>
 
 #define TAG "sensors"
+#define READINGS_TAG "sreads"
 
 namespace beehive::sensors {
 
@@ -145,6 +147,8 @@ void Sensors::work()
     vTaskDelay(sleeptime_in_ms / portTICK_PERIOD_MS);
   }
 
+  ESP_LOGE(READINGS_TAG, "%s", beehive::util::isoformat().c_str());
+
   for(auto& entry : _sensors)
   {
     const sensor_id_t id = {entry.busno, entry.address};
@@ -163,6 +167,7 @@ void Sensors::work()
 	raw_values.humidity,
 	raw_values.temperature
       });
+    ESP_LOGE(READINGS_TAG, "%02X:%02X -> %04XH, %04XT", entry.busno, entry.address, raw_values.humidity, raw_values.temperature);
     #ifdef CONFIG_BEEHIVE_FAKE_SENSOR_DATA
     sensors_seen.insert({entry.busno, entry.address});
     #endif
