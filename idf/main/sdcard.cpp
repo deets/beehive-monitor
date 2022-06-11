@@ -38,7 +38,7 @@ static const char *s_mount_point = "/sdcard";
 static const char *FILE_FORMAT_VERSION = "V2,";
 
 #define FILE_PREFIX "BEE" // must be upper-case
-#define DATASETS_PER_DAY (12 * 24) // every 5 minutes, 24h a day
+#define DATASETS_PER_FILE (12 * 24) // Just assume every 5 minutes, 24h a day
 
 // DMA channel to be used by the SPI peripheral
 #ifndef SPI_DMA_CHAN
@@ -221,7 +221,7 @@ void SDCardWriter::setup_file_info()
 	);
 	// In a first approximation, we derive the datapoint index from the
 	// number of entries per day
-	_total_datasets_written = _filename_index * DATASETS_PER_DAY;
+	_total_datasets_written = _filename_index * DATASETS_PER_FILE;
       }
     }
     closedir(dp);
@@ -241,7 +241,7 @@ void SDCardWriter::report_file_size()
 }
 
 void SDCardWriter::file_rotation() {
-  if(_datasets_written > DATASETS_PER_DAY)
+  if(_datasets_written > DATASETS_PER_FILE)
   {
     _datasets_written = 0;
   }
