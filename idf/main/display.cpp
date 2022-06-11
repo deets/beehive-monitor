@@ -190,6 +190,10 @@ void Display::sdcard_info_t::event_handler(esp_event_base_t event_base,
     datasets_written = *static_cast<size_t*>(event_data);
     no_file = false;
     break;
+  case beehive::events::sdcard::FILE_COUNT:
+    file_count = *static_cast<size_t*>(event_data);
+    no_file = false;
+    break;
   case beehive::events::sdcard::NO_FILE:
     no_file = true;
     break;
@@ -206,6 +210,11 @@ void Display::sdcard_info_t::show(Display& display)
     auto x = 4;
     x += display.font_render(NORMAL, "Writes: ", x, y);
     display.font_render(NORMAL, datasets_written, x, y);
+
+    y += 4 + NORMAL.size;
+    x = 4;
+    x += display.font_render(NORMAL, "File#: ", x, y);
+    display.font_render(NORMAL, file_count, x, y);
   }
   else
   {

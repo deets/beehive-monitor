@@ -310,7 +310,9 @@ void SDCardWriter::sensor_event_handler(esp_event_base_t base, beehive::events::
       report_file_size();
 
       esp_event_post(
-	SDCARD_EVENTS, beehive::events::sdcard::DATASET_WRITTEN, &_datasets_written, sizeof(_datasets_written), 0);
+	SDCARD_EVENTS, beehive::events::sdcard::DATASET_WRITTEN, &_total_datasets_written, sizeof(_total_datasets_written), 0);
+      esp_event_post(
+	SDCARD_EVENTS, beehive::events::sdcard::FILE_COUNT, &_filename_index, sizeof(_filename_index), 0);
     }
     else
     {

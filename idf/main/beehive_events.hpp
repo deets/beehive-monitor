@@ -97,6 +97,7 @@ enum sdcard_events_t
 {
   MOUNTED,
   DATASET_WRITTEN,
+  FILE_COUNT,
   NO_FILE
 };
 

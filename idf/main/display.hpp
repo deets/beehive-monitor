@@ -79,6 +79,7 @@ class Display {
 
     bool mounted = false;
     size_t datasets_written = 0;
+    size_t file_count = 0;
     bool no_file = false;
   };
 
