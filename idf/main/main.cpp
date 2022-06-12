@@ -235,7 +235,6 @@ void setup_buttons()
 void run_over_lora(Display& display, I2CHost &i2c_bus)
 {
   using namespace std::chrono_literals;
-
   beehive::lora::LoRaLink lora;
 
   if(beehive::lora::is_field_device())
@@ -255,10 +254,8 @@ void run_over_lora(Display& display, I2CHost &i2c_bus)
       // This is a bit shitty, but it appears as if only
       // one task can drive an I2C host. So we drive both
       // display and sensors explicitly here.
-      vTaskDelay(100 / portTICK_PERIOD_MS);
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
       esp_task_wdt_reset();
-      i2c_bus.reset();
-      display.work();
       if(std::chrono::steady_clock::now() >= sensor_time)
       {
         sensors.work();
@@ -271,7 +268,6 @@ void run_over_lora(Display& display, I2CHost &i2c_bus)
     beehive::http::HTTPServer http_server([]() { return 0;});
     // We don't use I2C for anything but the
     // display, so use its own task.
-    display.start_task();
     lora.run_base_work();
   }
 }
@@ -312,6 +308,7 @@ void app_main()
 
   #ifdef BOARD_TTGO
   Display display(i2c_bus);
+  display.start_task();
   #endif
 
   // must be early because it initialises NVS
@@ -327,7 +324,6 @@ void app_main()
   #ifdef USE_LORA
   run_over_lora(display, i2c_bus);
   #else
-  display.start_task();
   run_over_wifi(i2c_bus);
   #endif
 }

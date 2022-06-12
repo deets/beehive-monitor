@@ -394,7 +394,7 @@ void Display::task()
 
 void Display::work()
 {
-
+  auto lock = _bus.lock();
   progress_state();
   clear();
   if(_ota_info.ongoing())
