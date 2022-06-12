@@ -20,6 +20,7 @@ extern "C" {
   ESP_EVENT_DECLARE_BASE(SDCARD_EVENTS);
   ESP_EVENT_DECLARE_BASE(LORA_EVENTS);
   ESP_EVENT_DECLARE_BASE(BEEHIVE_MQTT_EVENTS);
+  ESP_EVENT_DECLARE_BASE(OTA_EVENTS);
 
 #ifdef __cplusplus
 }
@@ -89,6 +90,21 @@ std::optional<std::vector<sht3xdis_value_t>> receive_readings(sensor_events_t,
                                                               void *event_data);
 
 } // namespace sensors
+
+namespace ota {
+
+enum ota_events_t
+{
+  NONE,
+  STARTED,
+  FOUND,
+};
+
+void started();
+void found();
+void none();
+
+}
 
 namespace sdcard {
 

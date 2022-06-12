@@ -1,3 +1,4 @@
+#include "beehive_events.hpp"
 #include "font.h"
 
 #include "i2c.hh"
@@ -83,6 +84,20 @@ class Display {
     bool no_file = false;
   };
 
+  struct ota_info_t : event_listener_base_t {
+
+    ota_info_t();
+    void event_handler(esp_event_base_t event_base,
+                       int32_t event_id, void* event_data) override;
+
+    void show(Display&);
+
+    beehive::events::ota::ota_events_t state = beehive::events::ota::NONE;
+    int64_t until = 0;
+
+    bool ongoing();
+  };
+
   struct system_info_t
   {
     void show(Display&);
@@ -148,6 +163,7 @@ private:
   system_info_t _system_info;
   sensor_info_t _sensor_info;
   mqtt_info_t _mqtt_info;
+  ota_info_t _ota_info;
 
   int64_t _state_switch_timestamp;
 };

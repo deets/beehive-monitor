@@ -14,6 +14,7 @@ ESP_EVENT_DEFINE_BASE(CONFIG_EVENTS);
 ESP_EVENT_DEFINE_BASE(SENSOR_EVENTS);
 ESP_EVENT_DEFINE_BASE(SDCARD_EVENTS);
 ESP_EVENT_DEFINE_BASE(LORA_EVENTS);
+ESP_EVENT_DEFINE_BASE(OTA_EVENTS);
 // Needs the BEEHIVE_ because MQTT_EVENTS is from the system
 ESP_EVENT_DEFINE_BASE(BEEHIVE_MQTT_EVENTS);
 
@@ -47,6 +48,18 @@ void published(size_t message_backlog_count)
 }
 
 } // namespace mqtt
+
+namespace ota {
+
+void started() { esp_event_post(OTA_EVENTS, STARTED, nullptr, 0, 0); }
+
+void found() { esp_event_post(OTA_EVENTS, FOUND, nullptr, 0, 0); }
+
+void none() { esp_event_post(OTA_EVENTS, NONE, nullptr, 0, 0); }
+
+} // namespace ota
+
+
 
 namespace buttons {
 

@@ -225,6 +225,29 @@ void Display::sdcard_info_t::show(Display& display)
 }
 
 
+Display::ota_info_t::ota_info_t() : Display::event_listener_base_t{{OTA_EVENTS}} {}
+
+void Display::ota_info_t::event_handler(esp_event_base_t event_base,
+                         int32_t event_id, void* event_data)
+{
+  using namespace beehive::events::ota;
+  state = ota_events_t(event_id);
+  until = esp_timer_get_time() + STATE_SHOW_TIME;
+}
+
+bool Display::ota_info_t::ongoing()
+{
+  using namespace beehive::events::ota;
+  return state == STARTED || esp_timer_get_time() < until;
+}
+
+void Display::ota_info_t::show(Display& display)
+{
+  auto y = NORMAL.size + 1;
+  display.font_render(NORMAL, "OTA", 2, y);
+}
+
+
 Display::sensor_info_t::sensor_info_t() : Display::event_listener_base_t{{SENSOR_EVENTS}} {}
 
 void Display::sensor_info_t::event_handler(esp_event_base_t event_base,
@@ -371,8 +394,15 @@ void Display::task()
 
 void Display::work()
 {
-    progress_state();
-    clear();
+
+  progress_state();
+  clear();
+  if(_ota_info.ongoing())
+  {
+    _ota_info.show(*this);
+  }
+  else
+  {
     switch(_state)
     {
     case WIFI:
@@ -391,7 +421,7 @@ void Display::work()
       break;
     case SYSTEM:
       _system_info.show(*this);
-      break;
+        break;
     case SENSORS:
       _sensor_info.show(*this);
       break;
@@ -399,7 +429,8 @@ void Display::work()
       _mqtt_info.show(*this);
       break;
     }
-    update();
+  }
+  update();
 }
 
 
