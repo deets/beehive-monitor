@@ -12,6 +12,7 @@
 #include <esp_ota_ops.h>
 #include <esp_event_base.h>
 #include <esp_log.h>
+#include <esp_smartconfig.h>
 
 #include <u8g2.h>
 
@@ -248,6 +249,34 @@ void Display::ota_info_t::show(Display& display)
 }
 
 
+Display::smartconfig_info_t::smartconfig_info_t() : Display::event_listener_base_t{{SC_EVENT}} {}
+
+void Display::smartconfig_info_t::event_handler(esp_event_base_t event_base,
+                         int32_t event_id, void* event_data)
+{
+  switch(event_id)
+  {
+  case SC_EVENT_SCAN_DONE:
+  case SC_EVENT_FOUND_CHANNEL:
+    started = true;
+    break;
+  default:
+    started = false;
+  }
+}
+
+bool Display::smartconfig_info_t::ongoing()
+{
+  return started;
+}
+
+void Display::smartconfig_info_t::show(Display& display)
+{
+  auto y = NORMAL.size + 1;
+  display.font_render(NORMAL, "SMARTCONFIG", 2, y);
+}
+
+
 Display::sensor_info_t::sensor_info_t() : Display::event_listener_base_t{{SENSOR_EVENTS}} {}
 
 void Display::sensor_info_t::event_handler(esp_event_base_t event_base,
@@ -400,6 +429,10 @@ void Display::work()
   if(_ota_info.ongoing())
   {
     _ota_info.show(*this);
+  }
+  else if(_smartconfig_info.ongoing())
+  {
+    _smartconfig_info.show(*this);
   }
   else
   {

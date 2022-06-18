@@ -98,6 +98,18 @@ class Display {
     bool ongoing();
   };
 
+  struct smartconfig_info_t : event_listener_base_t {
+
+    smartconfig_info_t();
+    void event_handler(esp_event_base_t event_base,
+                       int32_t event_id, void* event_data) override;
+
+    void show(Display&);
+
+    bool started = false;
+    bool ongoing();
+  };
+
   struct system_info_t
   {
     void show(Display&);
@@ -164,6 +176,7 @@ private:
   sensor_info_t _sensor_info;
   mqtt_info_t _mqtt_info;
   ota_info_t _ota_info;
+  smartconfig_info_t _smartconfig_info;
 
   int64_t _state_switch_timestamp;
 };
