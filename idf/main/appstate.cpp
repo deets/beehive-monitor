@@ -19,7 +19,7 @@ namespace {
 #define NVS_NAMESPACE "beehive"
 
 #ifdef USE_LORA
-#define LORA_DBM_DEFAULT 10
+#define LORA_DBM_DEFAULT 6
 uint32_t s_lora_dbm;
 #endif
 
