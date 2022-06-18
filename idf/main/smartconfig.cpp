@@ -25,10 +25,7 @@ namespace {
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
 static EventGroupHandle_t s_wifi_event_group = nullptr;
 
-/* The event group allows multiple bits for each event,
-   but we only care about one event - are we connected
-   to the AP with an IP? */
-static const int CONNECTED_BIT = BIT0;
+static const int START_BIT = BIT0;
 static const int ESPTOUCH_DONE_BIT = BIT1;
 
 void event_handler(void* arg, esp_event_base_t event_base,
@@ -62,6 +59,11 @@ void event_handler(void* arg, esp_event_base_t event_base,
     ESP_ERROR_CHECK( esp_wifi_disconnect() );
     ESP_ERROR_CHECK( esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
     esp_wifi_connect();
+    ESP_LOGI(TAG, "after connect");
+    // Not sure why, but the SC_EVENT_SEND_ACK_DONE doesn't
+    // seem to happen. But being here means we can go &
+    // try again.
+    xEventGroupSetBits(s_wifi_event_group, ESPTOUCH_DONE_BIT);
   } else if (event_base == SC_EVENT && event_id == SC_EVENT_SEND_ACK_DONE) {
     xEventGroupSetBits(s_wifi_event_group, ESPTOUCH_DONE_BIT);
   }
@@ -70,21 +72,27 @@ void event_handler(void* arg, esp_event_base_t event_base,
 
 void smartconfig_task(void * parm)
 {
-    EventBits_t uxBits;
-    ESP_ERROR_CHECK( esp_smartconfig_set_type(SC_TYPE_ESPTOUCH) );
-    smartconfig_start_config_t cfg = SMARTCONFIG_START_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK( esp_smartconfig_start(&cfg) );
-    while (1) {
-        uxBits = xEventGroupWaitBits(s_wifi_event_group, CONNECTED_BIT | ESPTOUCH_DONE_BIT, true, false, portMAX_DELAY);
-        if(uxBits & CONNECTED_BIT) {
-            ESP_LOGI(TAG, "WiFi Connected to ap");
-        }
-        if(uxBits & ESPTOUCH_DONE_BIT) {
-            ESP_LOGI(TAG, "smartconfig over");
-            esp_smartconfig_stop();
-            vTaskDelete(NULL);
-        }
+  while(true)
+  {
+    auto uxBits = xEventGroupWaitBits(s_wifi_event_group, START_BIT, true, false, portMAX_DELAY);
+    if(uxBits)
+    {
+      // We need this first so that an ongoing attempt
+      // to connect doesn't interfere.
+      esp_wifi_disconnect();
+      ESP_LOGI(TAG, "Start SmartConfig");
+      ESP_ERROR_CHECK( esp_smartconfig_set_type(SC_TYPE_ESPTOUCH) );
+      smartconfig_start_config_t cfg = SMARTCONFIG_START_CONFIG_DEFAULT();
+      ESP_ERROR_CHECK( esp_smartconfig_start(&cfg) );
+
+      uxBits = xEventGroupWaitBits(s_wifi_event_group, ESPTOUCH_DONE_BIT, true, false, portMAX_DELAY);
+      if(uxBits & ESPTOUCH_DONE_BIT) {
+        ESP_LOGI(TAG, "SmartConfig over");
+        esp_smartconfig_stop();
+      }
     }
+    xEventGroupClearBits(s_wifi_event_group, ESPTOUCH_DONE_BIT | START_BIT);
+  }
 }
 
 }
@@ -95,9 +103,9 @@ void run()
   {
     s_wifi_event_group = xEventGroupCreate();
     ESP_ERROR_CHECK( esp_event_handler_register(SC_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL) );
+    xTaskCreate(smartconfig_task, "smartconfig_task", 4096, NULL, 3, NULL);
   }
-  xEventGroupClearBits(s_wifi_event_group, CONNECTED_BIT | ESPTOUCH_DONE_BIT);
-  xTaskCreate(smartconfig_task, "smartconfig_task", 4096, NULL, 3, NULL);
+  xEventGroupSetBits(s_wifi_event_group, START_BIT);
 }
 
 } // namespace beehive::smartconfig
