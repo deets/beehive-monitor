@@ -5,6 +5,8 @@ BOARD=TTGO
 # the LoRa module
 USE_LORA=true
 
+SUFFIX=""
+
 if [ -e ~esp/${VERSION} ]
 then
     base=~esp/${VERSION}
@@ -18,9 +20,11 @@ fi
 if [ "$BOARD" == "TTGO" ]
 then
     BUILD_DIR="build-ttgo"
+    SUFFIX="-ttgo"
     if [ "$USE_LORA" == true ]
     then
         BUILD_DIR="build-ttgo-lora"
+        SUFFIX="-ttgo-lora"
     fi
 elif [ "$BOARD" == "NODEMCU" ]
 then
@@ -35,3 +39,4 @@ else
     exit 1
 fi
 export BUILD_DIR
+export SUFFIX

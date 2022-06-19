@@ -34,7 +34,14 @@ void ota_task(void *pvParameter)
       beehive::events::ota::started();
       const auto app_desc = esp_ota_get_app_description();
       std::stringstream url_stream;
-      url_stream << UPDATE_URL_BASE << app_desc->version << ".bin";
+      url_stream << UPDATE_URL_BASE << app_desc->version;
+      #ifdef BOARD_TTGO
+      url_stream << "-ttgo";
+      #ifdef USE_LORA
+      url_stream << "-lora";
+      #endif
+      #endif
+      url_stream << ".bin";
       const auto url = url_stream.str();
       ESP_LOGI(TAG, "Starting OTA example, fetching: %s", url.c_str());
 
