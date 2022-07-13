@@ -16,7 +16,13 @@
 
 namespace {
 
-std::array<uint8_t, 6> LORA_SENDER_MAC = {0x30, 0x83, 0x98, 0xdc, 0xca, 0xfc};
+std::array<std::array<uint8_t, 6>, 2> LORA_SENDER_MACS = {
+  {
+    {0x30, 0x83, 0x98, 0xdc, 0xca, 0xfc}, // Heiko's
+    {0x4c, 0x75, 0x25, 0xc3, 0x5e, 0xbc} // Diez
+  }
+};
+
 
 }
 
@@ -26,7 +32,14 @@ bool is_field_device()
 {
   std::array<uint8_t, 6> mac;
   esp_read_mac(mac.data(), ESP_MAC_WIFI_STA);
-  return LORA_SENDER_MAC == mac;
+  for(const auto& field_mac : LORA_SENDER_MACS)
+  {
+    if(field_mac == mac)
+    {
+      return true;
+    }
+  }
+  return false;
 }
 
 
