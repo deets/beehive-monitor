@@ -12,6 +12,7 @@
 #include "sht3xdis.hpp"
 
 #include "sdkconfig.h"
+#include <esp_task_wdt.h>
 
 #include <math.h>
 
@@ -144,6 +145,7 @@ void Sensors::work()
       humidity += raw_values.humidity;
       readings_accus[id] = { temperature, humidity };
     }
+    esp_task_wdt_reset();
     vTaskDelay(sleeptime_in_ms / portTICK_PERIOD_MS);
   }
 
