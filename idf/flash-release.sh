@@ -1,7 +1,9 @@
 #!/bin/bash
+base=$(dirname "$0")
+. $base/common.sh
 
 release="$1"
-files="beehive.bin bootloader.bin ota_data_initial.bin partition-table.bin"
+files="beehive${SUFFIX}.bin bootloader.bin ota_data_initial.bin partition-table.bin"
 
 if [ "$release" == "-h" ]
 then
@@ -15,7 +17,7 @@ then
                0x1000 "$release/bootloader.bin" \
                0x8000 "$release/partition-table.bin" \
                0xf000 "$release/ota_data_initial.bin" \
-               0x20000 "$release/beehive.bin"
+               0x20000 "$release/beehive${SUFFIX}.bin"
 else
     echo "No esptool.py found, have you setup the IDF?"
     exit 1
