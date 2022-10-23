@@ -1,6 +1,7 @@
 VERSION=v4.4
 # One of NODEMCU or TTGO
 BOARD=TTGO
+#BOARD=NODEMCU
 # If board is TTGO, we can use
 # the LoRa module
 USE_LORA=true
