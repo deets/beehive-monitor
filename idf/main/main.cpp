@@ -155,7 +155,7 @@ void start_mdns_service()
     mdns_service_instance_name_set("_http", "_tcp", ss.str().c_str());
 }
 
-
+#ifndef USE_LORA
 void wait_or_sleep()
 {
   beehive::appstate::promote_configuration();
@@ -200,6 +200,8 @@ void wait_or_sleep()
     }
   }
 }
+
+#endif
 
 
 void setup_buttons()
