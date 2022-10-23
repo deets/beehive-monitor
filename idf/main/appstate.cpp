@@ -141,7 +141,9 @@ void promote_configuration()
   beehive::events::config::mqtt::hostname(s_mqtt_host.c_str());
   beehive::events::config::system_name(s_system_name.c_str());
   beehive::events::config::sleeptime(s_sleeptime);
+  #ifdef USE_LORA
   beehive::events::config::lora_dbm(s_lora_dbm);
+  #endif
 }
 
 void set_mqtt_host(const std::string& host)
