@@ -1,8 +1,9 @@
 #include "freertos/projdefs.h"
-#include "i2c.hh"
+#include "deets/i2c.hpp"
 #include "display.hpp"
 #include "buttons.hpp"
-#include "wifi.hpp"
+#include "deets/wifi.hpp"
+#include "deets/eventloop.hpp"
 #include "mqtt.hpp"
 #include "sensors.hpp"
 #include "sdcard.hpp"
@@ -232,7 +233,7 @@ void setup_buttons()
 }
 
 #ifdef USE_LORA
-void run_over_lora(I2CHost &i2c_bus)
+void run_over_lora(deets::i2c::I2CHost &i2c_bus)
 {
   using namespace std::chrono_literals;
   beehive::lora::LoRaLink lora;
@@ -269,7 +270,7 @@ void run_over_lora(I2CHost &i2c_bus)
 
 #else // USE_LORA
 
-void run_over_wifi(I2CHost& i2c_bus)
+void run_over_wifi(deets::i2c::I2CHost& i2c_bus)
 {
   sdcard::SDCardWriter sdcard_writer;
   // We pass the total_datasets_written as sequence number to start
@@ -297,9 +298,9 @@ void app_main()
 
   // Must be the first, because we heavily rely
   // on the event system!
-  ESP_ERROR_CHECK(esp_event_loop_create_default());
+  deets::eventloop::init();
 
-  I2CHost i2c_bus{0, SDA, SCL};
+  deets::i2c::I2CHost i2c_bus{0, SDA, SCL};
 
   #ifdef BOARD_TTGO
   Display display(i2c_bus);

@@ -381,7 +381,7 @@ void Display::system_info_t::show(Display &display)
   x += display.font_render(NORMAL, uptime(), x, y);
 }
 
-Display::Display(I2CHost &bus)
+Display::Display(deets::i2c::I2CHost &bus)
   : _bus(bus)
 {
   _u8g2 = std::unique_ptr<u8g2_struct>(new u8g2_t{});

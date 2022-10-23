@@ -3,7 +3,7 @@
 #include "lora.hpp"
 #include "pins.hpp"
 #include "beehive_events.hpp"
-#include "sht3xdis.hpp"
+#include "deets/i2c/sht3xdis.hpp"
 #include "mqtt.hpp"
 #include "appstate.hpp"
 
@@ -111,7 +111,7 @@ void LoRaLink::sensor_event_handler(
 void LoRaLink::run_base_work()
 {
   using namespace beehive::events::sensors;
-  using namespace sht3xdis;
+  using namespace deets::i2c::sht3xdis;
 
   while(true)
   {

@@ -2,19 +2,21 @@
 
 #pragma once
 
-#include "i2c.hh"
+#include "deets/i2c.hpp"
 
 #include <memory>
 #include <vector>
+
+namespace deets::i2c {
+
+class TCA9548A;
 
 namespace sht3xdis {
 
 class SHT3XDIS;
 
 } // namespace sht3xdis
-
-class I2C;
-class TCA9548A;
+} // namespace deets::i2c
 
 
 namespace beehive::sensors {
@@ -25,22 +27,22 @@ class Sensors
   {
     uint8_t busno;
     uint8_t address;
-    std::unique_ptr<sht3xdis::SHT3XDIS> sensor;
+    std::unique_ptr<deets::i2c::sht3xdis::SHT3XDIS> sensor;
   };
 
 public:
-  Sensors(I2CHost& bus);
+  Sensors(deets::i2c::I2CHost& bus);
   ~Sensors();
 
   void work();
 
 private:
 
-  I2C& _bus;
-  std::unique_ptr<TCA9548A> _mux;
+  deets::i2c::I2C& _bus;
+  std::unique_ptr<deets::i2c::TCA9548A> _mux;
   std::vector<sensor_t> _sensors;
 };
 
-void setup_sensor_task(I2CHost& bus);
+void setup_sensor_task(deets::i2c::I2CHost& bus);
 
 } // namespace beehive::sensors

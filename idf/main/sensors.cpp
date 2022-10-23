@@ -7,9 +7,8 @@
 #include "appstate.hpp"
 #include "util.hpp"
 
-#include "i2c.hh"
-#include "tca9548a.hpp"
-#include "sht3xdis.hpp"
+#include "deets/i2c/tca9548a.hpp"
+#include "deets/i2c/sht3xdis.hpp"
 
 #include "sdkconfig.h"
 #include <esp_task_wdt.h>
@@ -75,7 +74,7 @@ void fake_sensor_data(std::vector<sht3xdis_value_t>& readings, const std::set<st
 
 void sensor_task(void* user_pointer)
 {
-  I2CHost* bus = static_cast<I2CHost*>(user_pointer);
+  deets::i2c::I2CHost* bus = static_cast<deets::i2c::I2CHost*>(user_pointer);
   Sensors sensors(*bus);
   vTaskDelay(2000 / portTICK_PERIOD_MS);
 
@@ -92,18 +91,18 @@ void sensor_task(void* user_pointer)
 
 
 
-Sensors::Sensors(I2CHost& bus)
+Sensors::Sensors(deets::i2c::I2CHost& bus)
   : _bus(bus)
-  , _mux(std::unique_ptr<TCA9548A>(new TCA9548A{_bus}))
+  , _mux(std::unique_ptr<deets::i2c::TCA9548A>(new deets::i2c::TCA9548A{_bus}))
 {
   for(uint8_t busno=0; busno < 8; ++busno)
   {
     for(auto& address : _mux->bus(busno).scan())
     {
       ESP_LOGD(TAG, "on bus %i found address: %x", busno, address);
-      if(sht3xdis::SHT3XDIS::valid_address(address))
+      if(deets::i2c::sht3xdis::SHT3XDIS::valid_address(address))
       {
-	auto sensor = std::unique_ptr<sht3xdis::SHT3XDIS>(new sht3xdis::SHT3XDIS(_mux->bus(busno), address));
+	auto sensor = std::unique_ptr<deets::i2c::sht3xdis::SHT3XDIS>(new deets::i2c::sht3xdis::SHT3XDIS(_mux->bus(busno), address));
 	auto entry = Sensors::sensor_t{ busno, address, std::move(sensor) };
 	_sensors.push_back(std::move(entry));
       }
@@ -156,11 +155,11 @@ void Sensors::work()
     const sensor_id_t id = {entry.busno, entry.address};
     const auto [ acc_temperature, acc_humidity ] = readings_accus[id];
 
-    const auto raw_values = sht3xdis::RawValues{
+    const auto raw_values = deets::i2c::sht3xdis::RawValues{
       uint16_t(acc_humidity / SENSOR_READING_COUNT),
       uint16_t(acc_temperature / SENSOR_READING_COUNT)
     };
-    const auto values = sht3xdis::Values::from_raw(raw_values);
+    const auto values = deets::i2c::sht3xdis::Values::from_raw(raw_values);
     readings.push_back(
       {
 	entry.busno, entry.address,
@@ -180,7 +179,7 @@ void Sensors::work()
   send_readings(readings);
 }
 
-void setup_sensor_task(I2CHost& i2c_bus)
+void setup_sensor_task(deets::i2c::I2CHost& i2c_bus)
 {
   // it seems if I don't bind this to core 0, the i2c
   // subsystem fails randomly.

@@ -1,7 +1,7 @@
 #include "beehive_events.hpp"
 #include "font.h"
 
-#include "i2c.hh"
+#include "deets/i2c.hpp"
 
 #include <cstdint>
 #include <esp_event_base.h>
@@ -139,7 +139,7 @@ class Display {
   };
 
 public:
-  Display(I2CHost&);
+  Display(deets::i2c::I2CHost&);
   ~Display();
 
   void update();
@@ -161,7 +161,7 @@ private:
   static uint8_t s_u8g2_esp32_i2c_byte_cb(u8x8_struct *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
   uint8_t u8g2_esp32_i2c_byte_cb(u8x8_struct *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
 
-  I2CHost& _bus;
+  deets::i2c::I2CHost& _bus;
   std::unique_ptr<u8g2_struct> _u8g2;
   std::vector<uint8_t> _i2c_buffer;
 
