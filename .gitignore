@@ -2,4 +2,5 @@
 .*.hash
 /idf/.cache/
 /idf/build-*/
+/logfiles/
 
