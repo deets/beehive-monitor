@@ -2,7 +2,7 @@
 base=$(dirname "$0")
 . $base/common.sh
 
-files="beehive.bin bootloader/bootloader.bin ota_data_initial.bin partition_table/partition-table.bin"
+files="beehive.bin beehive.elf bootloader/bootloader.bin ota_data_initial.bin partition_table/partition-table.bin"
 
 dest="${1}${SUFFIX}"
 
@@ -29,6 +29,9 @@ do
     if [ "$f" == "beehive.bin" ]
     then
           cp -v "$fp" "$dest/beehive${SUFFIX}.bin"
+    elif [ "$f" == "beehive.elf" ]
+    then
+          cp -v "$fp" "$dest/beehive${SUFFIX}.elf"
     else
         cp -v "$fp" "$dest"
     fi
